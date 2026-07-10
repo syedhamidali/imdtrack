@@ -5,6 +5,7 @@ end users download.  Three parquet files hold the frames; ``manifest.json``
 records provenance (which IMD workbook they came from) and a few summary counts
 so freshness and integrity can be checked cheaply without opening the parquet.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,9 +37,11 @@ class Manifest:
     year_max: Optional[int]
 
     @classmethod
-    def from_frames(cls, frames: dict, source_url: str, source_sha256: str) -> "Manifest":
+    def from_frames(cls, frames: dict, source_url: str, source_sha256: str) -> Manifest:
         obs = frames["observations"]
-        years = obs["year"] if ("year" in obs.columns and not obs.empty) else pd.Series(dtype="int64")
+        years = (
+            obs["year"] if ("year" in obs.columns and not obs.empty) else pd.Series(dtype="int64")
+        )
         return cls(
             format=FORMAT_VERSION,
             source_url=source_url,
@@ -75,9 +78,8 @@ def read_manifest(data_dir: Path) -> Optional[Manifest]:
 
 def dataset_exists(data_dir: Path) -> bool:
     data_dir = Path(data_dir)
-    return (
-        manifest_path(data_dir).exists()
-        and all(_frame_path(data_dir, n).exists() for n in FRAME_NAMES)
+    return manifest_path(data_dir).exists() and all(
+        _frame_path(data_dir, n).exists() for n in FRAME_NAMES
     )
 
 

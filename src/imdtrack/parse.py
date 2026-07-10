@@ -8,6 +8,7 @@ rows.  :func:`parse_workbook` untangles all of that into two frames:
 * ``observations`` - one tidy row per 3-hourly fix (the "track").
 * ``remarks``      - the free-text notes, linked back to their storm.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -155,8 +156,12 @@ def parse_workbook(path: PathLike) -> dict[str, pd.DataFrame]:
     finally:
         wb.close()
 
-    obs = pd.DataFrame(all_obs, columns=["year", "serial", "basin", "name", "time"] +
-                       [f for f in S.FIELDS if f in S.NUMERIC_FIELDS] + ["grade"])
+    obs = pd.DataFrame(
+        all_obs,
+        columns=["year", "serial", "basin", "name", "time"]
+        + [f for f in S.FIELDS if f in S.NUMERIC_FIELDS]
+        + ["grade"],
+    )
     if not obs.empty:
         obs.insert(0, "storm_id", [_storm_id(y, s) for y, s in zip(obs["year"], obs["serial"])])
         obs["grade"] = pd.Categorical(obs["grade"], categories=S.GRADE_ORDER, ordered=True)
@@ -176,8 +181,19 @@ def parse_workbook(path: PathLike) -> dict[str, pd.DataFrame]:
 def _summarize_storms(obs: pd.DataFrame) -> pd.DataFrame:
     if obs.empty:
         return pd.DataFrame(
-            columns=["storm_id", "year", "serial", "name", "basin", "start_time",
-                     "end_time", "n_obs", "peak_grade", "max_wind", "min_pressure"]
+            columns=[
+                "storm_id",
+                "year",
+                "serial",
+                "name",
+                "basin",
+                "start_time",
+                "end_time",
+                "n_obs",
+                "peak_grade",
+                "max_wind",
+                "min_pressure",
+            ]
         )
 
     def peak_grade(s):

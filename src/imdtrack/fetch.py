@@ -6,6 +6,7 @@ place whenever the record is updated (new storms, revised best tracks).  So
 changes.  We use a conditional GET (ETag / Last-Modified) so repeated calls are
 cheap and only download when something actually changed.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -35,10 +36,10 @@ def default_cache_dir() -> Path:
 
 @dataclass
 class FetchResult:
-    path: Path            # local workbook file
-    changed: bool         # True if this call downloaded new bytes
-    sha256: str           # content hash of the workbook
-    from_cache: bool      # True if the cached copy was reused
+    path: Path  # local workbook file
+    changed: bool  # True if this call downloaded new bytes
+    sha256: str  # content hash of the workbook
+    from_cache: bool  # True if the cached copy was reused
 
 
 def _meta_path(cache_dir: Path) -> Path:
@@ -96,7 +97,12 @@ def fetch_workbook(
                 new_meta = _headers_to_meta(resp)
         except urllib.error.HTTPError as exc:
             if exc.code == 304:
-                return FetchResult(wb_path, changed=False, sha256=meta.get("sha256", _sha256(wb_path)), from_cache=True)
+                return FetchResult(
+                    wb_path,
+                    changed=False,
+                    sha256=meta.get("sha256", _sha256(wb_path)),
+                    from_cache=True,
+                )
             raise
     else:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
@@ -131,11 +137,14 @@ def _write_meta(meta_path: Path, meta: dict) -> None:
 # Published dataset: download the committed parquet from the GitHub repo.
 # --------------------------------------------------------------------------- #
 
+
 def _repo_data_dir(cache_dir: Path) -> Path:
     return cache_dir / "repo_data"
 
 
-def _download_if_changed(url: str, dst: Path, meta_path: Path, update: bool, timeout: float) -> bool:
+def _download_if_changed(
+    url: str, dst: Path, meta_path: Path, update: bool, timeout: float
+) -> bool:
     """Fetch ``url`` to ``dst`` using a conditional GET. Returns True if updated.
 
     When ``update`` is False and a cached copy already exists, the network is not
@@ -193,6 +202,8 @@ def fetch_data_from_repo(
         filename = MANIFEST_NAME if name == "manifest" else f"{name}.parquet"
         dst = data_dir / filename
         meta_path = data_dir / f"{filename}.meta.json"
-        _download_if_changed(_repo.raw_url(filename), dst, meta_path, update=update, timeout=timeout)
+        _download_if_changed(
+            _repo.raw_url(filename), dst, meta_path, update=update, timeout=timeout
+        )
         paths[name] = dst
     return paths

@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/syedhamidali/imdtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/syedhamidali/imdtrack/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/syedhamidali/imdtrack/branch/main/graph/badge.svg)](https://codecov.io/gh/syedhamidali/imdtrack)
+[![Docs](https://readthedocs.org/projects/imdtrack/badge/?version=latest)](https://imdtrack.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/imdtrack.svg)](https://pypi.org/project/imdtrack/)
+[![Python versions](https://img.shields.io/pypi/pyversions/imdtrack.svg)](https://pypi.org/project/imdtrack/)
 [![Update dataset](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml/badge.svg)](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml)
 
 Read the [India Meteorological Department (IMD) RSMC New Delhi](https://rsmcnewdelhi.imd.gov.in/)

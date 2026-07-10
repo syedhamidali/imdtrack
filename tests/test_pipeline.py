@@ -1,6 +1,7 @@
 """Tests for the publish pipeline: storage round-trip, validation, and the
 fail-safe "don't clobber good data with a broken parse" guarantee.
 """
+
 from datetime import datetime
 
 import openpyxl
@@ -12,11 +13,19 @@ from imdtrack.parse import parse_workbook
 from imdtrack.pipeline import build
 
 HEADER_14 = [
-    "Serial Number of system during year", "Basin of origin", "Name",
-    "Date(DD-MM-YYYY)", "Time (UTC)", "Latitude (lat.)", "Longitude (lon.)",
-    'CI No [or "T. No"]', "Estimated Central Pressure (hPa)",
-    "Maximum Sustained Surface Wind (kt) ", "Pressure Drop (hPa)",
-    "Grade (text)", "Outermost closed isobar (hPa)",
+    "Serial Number of system during year",
+    "Basin of origin",
+    "Name",
+    "Date(DD-MM-YYYY)",
+    "Time (UTC)",
+    "Latitude (lat.)",
+    "Longitude (lon.)",
+    'CI No [or "T. No"]',
+    "Estimated Central Pressure (hPa)",
+    "Maximum Sustained Surface Wind (kt) ",
+    "Pressure Drop (hPa)",
+    "Grade (text)",
+    "Outermost closed isobar (hPa)",
     "Diameter/Size of outermost closed isobar",
 ]
 
@@ -49,6 +58,7 @@ def _write_workbook(tmp_path, n_storms=3, name="wb.xlsx"):
 # store round-trip
 # --------------------------------------------------------------------------- #
 
+
 def test_store_roundtrip_and_manifest(tmp_path):
     wb = _write_workbook(tmp_path)
     frames = parse_workbook(wb)
@@ -74,6 +84,7 @@ def test_store_roundtrip_and_manifest(tmp_path):
 # validation
 # --------------------------------------------------------------------------- #
 
+
 def test_validate_rejects_empty():
     empty = {
         "observations": pd.DataFrame(),
@@ -96,8 +107,15 @@ def test_validate_against_previous_rejects_shrink(tmp_path):
     wb = _write_workbook(tmp_path, n_storms=3)
     frames = parse_workbook(wb)
     prev = store.Manifest(
-        format=1, source_url="x", source_sha256="old", generated_at="",
-        n_storms=100, n_obs=10000, n_remarks=0, year_min=1982, year_max=2020,
+        format=1,
+        source_url="x",
+        source_sha256="old",
+        generated_at="",
+        n_storms=100,
+        n_obs=10000,
+        n_remarks=0,
+        year_min=1982,
+        year_max=2020,
     )
     with pytest.raises(validate.ValidationError):
         validate.validate_against_previous(frames, prev)
@@ -106,6 +124,7 @@ def test_validate_against_previous_rejects_shrink(tmp_path):
 # --------------------------------------------------------------------------- #
 # pipeline build (patch fetch so no network is used)
 # --------------------------------------------------------------------------- #
+
 
 def _patch_fetch(monkeypatch, wb_path, sha):
     from imdtrack import fetch as _fetch

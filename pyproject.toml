@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "imdtrack"
-version = "0.2.0"
+dynamic = ["version"]
 description = "IMD RSMC New Delhi cyclone best-track data as pandas DataFrames and xarray Datasets, kept up to date automatically."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -13,6 +13,12 @@ authors = [{ name = "Hamid Ali Syed" }]
 keywords = ["cyclone", "best-track", "IMD", "meteorology", "xarray", "pandas", "north-indian-ocean"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
     "License :: OSI Approved :: BSD License",
 ]
@@ -25,8 +31,20 @@ dependencies = [
 xarray = ["xarray>=2022.3", "numpy>=1.21"]
 # Parsing the raw IMD workbook (the update pipeline) needs openpyxl.
 pipeline = ["openpyxl>=3.0"]
+lint = ["black>=24.0", "ruff>=0.5"]
+docs = [
+    "sphinx>=7",
+    "pydata-sphinx-theme>=0.15",
+    "myst-nb>=1.0",
+    "jupytext>=1.16",
+    "ipykernel>=6",
+    "matplotlib>=3.6",
+]
 all = ["xarray>=2022.3", "numpy>=1.21", "openpyxl>=3.0"]
-dev = ["pytest>=7", "pytest-cov>=4", "xarray>=2022.3", "numpy>=1.21", "pyarrow>=10.0", "openpyxl>=3.0"]
+dev = [
+    "pytest>=7", "pytest-cov>=4", "xarray>=2022.3", "numpy>=1.21",
+    "pyarrow>=10.0", "openpyxl>=3.0", "black>=24.0", "ruff>=0.5",
+]
 
 [project.scripts]
 imdtrack = "imdtrack.cli:main"
@@ -34,8 +52,28 @@ imdtrack = "imdtrack.cli:main"
 [project.urls]
 Homepage = "https://rsmcnewdelhi.imd.gov.in/"
 
+[tool.hatch.version]
+path = "src/imdtrack/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/imdtrack"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["docs/examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# Keep Optional[X]/Union for readability under the py39 target.
+ignore = ["E203", "UP007", "UP045"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

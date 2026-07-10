@@ -4,6 +4,7 @@ These lock in the tricky real-world behaviours: forward-filled serials, name
 bleed between storms, free-text remark rows, messy numeric cells, and the
 alternate 16-column (split-date) sheet layout.
 """
+
 from datetime import datetime
 
 import openpyxl
@@ -13,20 +14,39 @@ from imdtrack import _schema as S
 from imdtrack.parse import parse_workbook
 
 HEADER_14 = [
-    "Serial Number of system during year", "Basin of origin", "Name",
-    "Date(DD-MM-YYYY)", "Time (UTC)", "Latitude (lat.)", "Longitude (lon.)",
-    'CI No [or "T. No"]', "Estimated Central Pressure (hPa)",
-    "Maximum Sustained Surface Wind (kt) ", "Pressure Drop (hPa)",
-    "Grade (text)", "Outermost closed isobar (hPa)",
+    "Serial Number of system during year",
+    "Basin of origin",
+    "Name",
+    "Date(DD-MM-YYYY)",
+    "Time (UTC)",
+    "Latitude (lat.)",
+    "Longitude (lon.)",
+    'CI No [or "T. No"]',
+    "Estimated Central Pressure (hPa)",
+    "Maximum Sustained Surface Wind (kt) ",
+    "Pressure Drop (hPa)",
+    "Grade (text)",
+    "Outermost closed isobar (hPa)",
     "Diameter/Size of outermost closed isobar",
 ]
 
 HEADER_16 = [
-    "Serial Number of system during year", "Basin of origin", "Name",
-    "Date(DD/MM/YYYY)", "Time (UTC)", "Latitude (lat)", "longitude  (Long)",
-    'CI No [or "T. No"]', "Estimated Central Pressure (hPa)",
-    "Maximum Sustained Surface Wind (kt) ", "Pressure Drop (hPa)",
-    "Grade (text)", "Outermost closed isobar (hPa)", "DD", "MM", "YYYY",
+    "Serial Number of system during year",
+    "Basin of origin",
+    "Name",
+    "Date(DD/MM/YYYY)",
+    "Time (UTC)",
+    "Latitude (lat)",
+    "longitude  (Long)",
+    'CI No [or "T. No"]',
+    "Estimated Central Pressure (hPa)",
+    "Maximum Sustained Surface Wind (kt) ",
+    "Pressure Drop (hPa)",
+    "Grade (text)",
+    "Outermost closed isobar (hPa)",
+    "DD",
+    "MM",
+    "YYYY",
 ]
 
 
@@ -66,7 +86,22 @@ def test_name_does_not_bleed_across_storms(tmp_path):
         [1, "BOB", "AMPHAN", d, "0000", 10.4, 87.0, 1.5, "1000", "25", "3", "D", "", ""],
         [None, "BOB", "AMPHAN", d, "0300", 10.7, 86.5, 1.5, "1000", "25", "3", "D", "", ""],
         [],  # blank separator
-        [2, "ARB", None, datetime(2020, 5, 29), "0900", 15.0, 68.0, 1.5, "1000", "25", "3", "D", "", ""],
+        [
+            2,
+            "ARB",
+            None,
+            datetime(2020, 5, 29),
+            "0900",
+            15.0,
+            68.0,
+            1.5,
+            "1000",
+            "25",
+            "3",
+            "D",
+            "",
+            "",
+        ],
     ]
     res = parse_workbook(_write(tmp_path, {"2020": rows}))
     storms = res["storms"].set_index("storm_id")
@@ -114,8 +149,8 @@ def test_16_column_split_date_layout(tmp_path):
     res = parse_workbook(_write(tmp_path, {"2025": rows}))
     obs = res["observations"]
     assert len(obs) == 2
-    assert obs["basin"].iloc[0] == "ARB"          # "AS" normalized to ARB
-    assert obs["oci_diameter"].isna().all()        # no diameter col in this layout
+    assert obs["basin"].iloc[0] == "ARB"  # "AS" normalized to ARB
+    assert obs["oci_diameter"].isna().all()  # no diameter col in this layout
     assert obs["time"].iloc[1] == datetime(2025, 5, 24, 3, 0)
 
 
@@ -123,23 +158,53 @@ def test_note_row_above_header(tmp_path):
     rows = [
         ["The best track parameters are tentative and subject to finalisation."],
         HEADER_16,
-        [1, "BOB", None, datetime(2026, 1, 7), "0300", 4.8, 88.2, 1.5, 1008, 25, 3, "D", None, 7, 1, 2026],
+        [
+            1,
+            "BOB",
+            None,
+            datetime(2026, 1, 7),
+            "0300",
+            4.8,
+            88.2,
+            1.5,
+            1008,
+            25,
+            3,
+            "D",
+            None,
+            7,
+            1,
+            2026,
+        ],
     ]
     res = parse_workbook(_write(tmp_path, {"2026": rows}))
     assert len(res["observations"]) == 1
 
 
-@pytest.mark.parametrize("raw,expected", [
-    ("BOB", "BOB"), ("AS", "ARB"), ("arb", "ARB"), ("Land", "LAND"), ("junk", None),
-])
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("BOB", "BOB"),
+        ("AS", "ARB"),
+        ("arb", "ARB"),
+        ("Land", "LAND"),
+        ("junk", None),
+    ],
+)
 def test_basin_normalization(raw, expected):
     assert S.normalize_basin(raw) == expected
 
 
-@pytest.mark.parametrize("raw,expected", [
-    ("NIVAR’", "NIVAR"), ("-", None), ("--", None),
-    ("SYSTEM CROSSED COAST NEAR X", None), ("AMPHAN", "AMPHAN"),
-])
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("NIVAR’", "NIVAR"),
+        ("-", None),
+        ("--", None),
+        ("SYSTEM CROSSED COAST NEAR X", None),
+        ("AMPHAN", "AMPHAN"),
+    ],
+)
 def test_name_normalization(raw, expected):
     assert S.normalize_name(raw) == expected
 

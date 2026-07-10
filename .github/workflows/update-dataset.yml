@@ -1,9 +1,9 @@
 name: Update dataset
 
 # Rebuild the committed dataset from the IMD workbook once a month.
-# - If IMD hasn't changed, nothing is committed.
-# - If IMD changed and the new file parses + validates, data/ is updated and
-#   committed.
+# - If IMD hasn't changed, nothing is committed and no release is made.
+# - If IMD changed and the new file parses + validates, data/ is updated,
+#   committed, the version is bumped + tagged, and a release is published.
 # - If the new file fails to parse or validate, the job FAILS (red X + GitHub's
 #   failure notification email) and the committed dataset is left untouched.
 on:
@@ -17,7 +17,7 @@ on:
         default: false
 
 permissions:
-  contents: write   # needed to push the refreshed data/ back to the repo
+  contents: write   # push the refreshed data/, version bump, and tag
 
 concurrency:
   group: update-dataset
@@ -26,6 +26,9 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+      version: ${{ steps.commit.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,15 +48,49 @@ jobs:
           imdtrack build --data-dir data \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '--force' || '' }}
 
-      - name: Commit and push if the dataset changed
+      - name: Commit, bump version, and tag if the dataset changed
+        id: commit
         run: |
-          if [ -n "$(git status --porcelain data)" ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data
-            git commit -m "data: monthly refresh from IMD best-track workbook"
-            git push
-            echo "Committed a dataset update."
-          else
+          if [ -z "$(git status --porcelain data)" ]; then
             echo "No dataset changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Bump the patch version (single source of truth: __init__.py).
+          NEW_VERSION="$(python - <<'PY'
+          import pathlib, re
+          p = pathlib.Path("src/imdtrack/__init__.py")
+          s = p.read_text()
+          m = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)"', s)
+          major, minor, patch = map(int, m.groups())
+          new = f"{major}.{minor}.{patch + 1}"
+          p.write_text(s[:m.start()] + f'__version__ = "{new}"' + s[m.end():])
+          print(new)
+          PY
+          )"
+
+          git add data src/imdtrack/__init__.py
+          git commit -m "data: refresh from IMD best-track workbook (v${NEW_VERSION})"
+          git tag "v${NEW_VERSION}"
+          git push origin HEAD --follow-tags
+
+          echo "Committed dataset update and tagged v${NEW_VERSION}."
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+  # Publish only when the dataset actually changed. Reuses the release pipeline
+  # (build -> TestPyPI -> PyPI -> GitHub Release) against the freshly-created tag.
+  release:
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      ref: ${{ needs.update.outputs.version }}
+    permissions:
+      contents: write
+      id-token: write
+    secrets: inherit

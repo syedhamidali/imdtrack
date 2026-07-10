@@ -12,6 +12,7 @@ The published dataset is rebuilt from the IMD workbook by a scheduled GitHub
 Action (see :mod:`imdtrack.pipeline`); ``load(source="imd")`` parses the raw
 workbook directly instead.
 """
+
 from __future__ import annotations
 
 from ._schema import GRADE_LONG, GRADE_ORDER, VALID_BASINS

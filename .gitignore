@@ -8,6 +8,13 @@ dist/
 .coverage
 coverage.xml
 htmlcov/
+
+# Docs build artifacts
+docs/_build/
+docs/jupyter_execute/
+docs/**/jupyter_execute/
+.jupyter_cache/
+docs/api/_autosummary/
 *.xlsx
 *.parquet
 .cache/

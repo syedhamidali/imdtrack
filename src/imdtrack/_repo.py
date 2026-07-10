@@ -9,6 +9,7 @@ themselves.
 The repo slug is baked in below but can be overridden with the ``IMDTRACK_REPO``
 / ``IMDTRACK_BRANCH`` environment variables (handy for forks and CI).
 """
+
 from __future__ import annotations
 
 import os

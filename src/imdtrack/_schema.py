@@ -6,6 +6,7 @@ than rely on fixed positions we detect each field by keyword-matching the header
 text.  Everything a downstream module needs to know about the raw layout lives
 here.
 """
+
 from __future__ import annotations
 
 import math
@@ -63,13 +64,13 @@ VALID_BASINS = set(_BASIN_MAP)
 # Canonical IMD intensity grades.  Anything that maps to None is treated as a
 # non-track (remark) marker or missing.
 _GRADE_MAP = {
-    "D": "D",       # Depression
-    "DD": "DD",     # Deep Depression
-    "CS": "CS",     # Cyclonic Storm
-    "SCS": "SCS",   # Severe Cyclonic Storm
-    "VSCS": "VSCS", # Very Severe Cyclonic Storm
-    "ESCS": "ESCS", # Extremely Severe Cyclonic Storm
-    "SUCS": "SuCS", # Super Cyclonic Storm
+    "D": "D",  # Depression
+    "DD": "DD",  # Deep Depression
+    "CS": "CS",  # Cyclonic Storm
+    "SCS": "SCS",  # Severe Cyclonic Storm
+    "VSCS": "VSCS",  # Very Severe Cyclonic Storm
+    "ESCS": "ESCS",  # Extremely Severe Cyclonic Storm
+    "SUCS": "SuCS",  # Super Cyclonic Storm
 }
 GRADE_ORDER = ["D", "DD", "CS", "SCS", "VSCS", "ESCS", "SuCS"]
 

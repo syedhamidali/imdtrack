@@ -6,6 +6,7 @@ grid, padding the tail of shorter storms with NaN / NaT.  Storm-level metadata
 (name, basin, year ...) live on the ``storm`` dimension; per-fix variables
 (lat, lon, wind ...) span ``(storm, step)``.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,8 +14,18 @@ import pandas as pd
 
 from . import _schema as S
 
-_OBS_VARS = ["time", "lat", "lon", "ci_no", "pressure", "wind",
-             "pressure_drop", "grade", "oci", "oci_diameter"]
+_OBS_VARS = [
+    "time",
+    "lat",
+    "lon",
+    "ci_no",
+    "pressure",
+    "wind",
+    "pressure_drop",
+    "grade",
+    "oci",
+    "oci_diameter",
+]
 
 
 def to_xarray(observations: pd.DataFrame, storms: pd.DataFrame | None = None):
@@ -54,17 +65,27 @@ def to_xarray(observations: pd.DataFrame, storms: pd.DataFrame | None = None):
 
     if storms is None:
         from .parse import _summarize_storms
+
         storms = _summarize_storms(obs)
     storms = storms.set_index("storm_id").reindex(storm_ids)
 
     coords = {
         "storm": ("storm", np.array(storm_ids, dtype=object)),
         "step": ("step", np.arange(max_step)),
-        "name": ("storm", storms["name"].astype(object).where(storms["name"].notna(), "").to_numpy()),
-        "basin": ("storm", storms["basin"].astype(object).where(storms["basin"].notna(), "").to_numpy()),
+        "name": (
+            "storm",
+            storms["name"].astype(object).where(storms["name"].notna(), "").to_numpy(),
+        ),
+        "basin": (
+            "storm",
+            storms["basin"].astype(object).where(storms["basin"].notna(), "").to_numpy(),
+        ),
         "year": ("storm", storms["year"].to_numpy(dtype="int64")),
         "serial": ("storm", storms["serial"].to_numpy(dtype="int64")),
-        "peak_grade": ("storm", storms["peak_grade"].astype(object).where(storms["peak_grade"].notna(), "").to_numpy()),
+        "peak_grade": (
+            "storm",
+            storms["peak_grade"].astype(object).where(storms["peak_grade"].notna(), "").to_numpy(),
+        ),
     }
 
     ds = xr.Dataset(data_vars=data_vars, coords=coords)

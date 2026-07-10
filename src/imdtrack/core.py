@@ -1,6 +1,8 @@
 """High-level entry points: fetch + parse + cache, exposed as pandas / xarray."""
+
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
@@ -38,6 +40,7 @@ class BestTracks:
     def to_xarray(self):
         """Return a 2-D ``(storm, step)`` :class:`xarray.Dataset`."""
         from .dataset import to_xarray
+
         return to_xarray(self.observations, self.storms)
 
     def storm(self, storm_id: str) -> pd.DataFrame:
@@ -126,10 +129,26 @@ def load(
 
 
 def _load_from_github(update: bool, cache_dir: Path) -> BestTracks:
-    """Load the pre-parsed dataset published in the GitHub repo."""
+    """Load the pre-parsed dataset published in the GitHub repo.
+
+    If ``IMDTRACK_DATA_DIR`` is set, the committed dataset is read straight from
+    that local directory instead of the network — handy for offline use, tests,
+    and building the docs against the in-repo ``data/``.
+    """
     import json
 
     from . import store
+
+    local = os.environ.get("IMDTRACK_DATA_DIR")
+    if local:
+        frames = store.read_dataset(Path(local))
+        manifest = store.read_manifest(Path(local))
+        return BestTracks(
+            observations=frames["observations"],
+            remarks=frames["remarks"],
+            storms=frames["storms"],
+            sha256=manifest.source_sha256 if manifest else None,
+        )
 
     paths = _fetch.fetch_data_from_repo(cache_dir=cache_dir, update=update)
     frames = store.read_frame_files(paths)
@@ -158,6 +177,7 @@ def _read_parquet(path: Path) -> pd.DataFrame:
     df = pd.read_parquet(path)
     if "grade" in df.columns:
         from . import _schema as S
+
         df["grade"] = pd.Categorical(df["grade"], categories=S.GRADE_ORDER, ordered=True)
     return df
 

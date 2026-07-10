@@ -1,4 +1,5 @@
 """Command-line interface: ``imdtrack update`` / ``info`` / ``export`` / ``build``."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,8 +13,12 @@ def main(argv=None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     p_up = sub.add_parser("update", help="Refresh the published dataset from GitHub (if changed).")
-    p_up.add_argument("--source", choices=["github", "imd"], default="github",
-                      help="github (default): pull the pre-parsed dataset; imd: parse the workbook.")
+    p_up.add_argument(
+        "--source",
+        choices=["github", "imd"],
+        default="github",
+        help="github (default): pull the pre-parsed dataset; imd: parse the workbook.",
+    )
     p_up.add_argument("--force", action="store_true", help="Re-download even if unchanged.")
 
     p_info = sub.add_parser("info", help="Show a summary of the cached record.")
@@ -49,8 +54,21 @@ def main(argv=None) -> int:
         bt = load(source=args.source)
         print(repr(bt))
         if not bt.storms.empty:
-            print(bt.storms[["storm_id", "name", "basin", "start_time", "peak_grade",
-                             "max_wind", "min_pressure"]].tail(10).to_string(index=False))
+            print(
+                bt.storms[
+                    [
+                        "storm_id",
+                        "name",
+                        "basin",
+                        "start_time",
+                        "peak_grade",
+                        "max_wind",
+                        "min_pressure",
+                    ]
+                ]
+                .tail(10)
+                .to_string(index=False)
+            )
     elif args.cmd == "export":
         bt = load(source=args.source, update=args.update)
         if args.out.endswith(".parquet"):

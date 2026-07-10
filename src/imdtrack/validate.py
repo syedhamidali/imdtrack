@@ -7,10 +7,10 @@ blindly parsed and committed such a file we would clobber a good dataset with a
 broken one.  The pipeline runs these checks and refuses to publish (the whole
 job fails, leaving the previous data in place) when any of them trips.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
 
 import pandas as pd
 
@@ -20,8 +20,16 @@ import pandas as pd
 SHRINK_TOLERANCE = 0.10  # new count must be >= 90% of the previous count
 
 _REQUIRED_OBS_COLUMNS = {
-    "storm_id", "year", "serial", "basin", "name", "time",
-    "lat", "lon", "grade", "step",
+    "storm_id",
+    "year",
+    "serial",
+    "basin",
+    "name",
+    "time",
+    "lat",
+    "lon",
+    "grade",
+    "step",
 }
 
 
