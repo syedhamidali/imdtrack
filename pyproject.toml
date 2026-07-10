@@ -8,13 +8,13 @@ version = "0.2.0"
 description = "IMD RSMC New Delhi cyclone best-track data as pandas DataFrames and xarray Datasets, kept up to date automatically."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
-authors = [{ name = "imdtrack contributors" }]
+license = { text = "BSD-3-Clause" }
+authors = [{ name = "Hamid Ali Syed" }]
 keywords = ["cyclone", "best-track", "IMD", "meteorology", "xarray", "pandas", "north-indian-ocean"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD License",
 ]
 dependencies = [
     "pandas>=1.5",

@@ -137,4 +137,4 @@ export IMDTRACK_CACHE=/data/imd        # download cache (default: ~/.cache/imdtr
 
 ## License
 
-MIT.
+BSD 3-Clause. See [LICENSE](LICENSE).
