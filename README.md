@@ -90,10 +90,13 @@ have to do anything; `imd.load(update=True)` pulls the latest.
 
 ## Citation
 
-Please cite `imdtrack` via its Zenodo **Concept DOI** (stable across releases —
-always resolves to the latest version). GitHub's "Cite this repository" button
-reads [`CITATION.cff`](CITATION.cff). Replace `XXXXXXXX` with your concept DOI
-once the first release is archived on Zenodo.
+Please cite `imdtrack` via its Zenodo **Concept DOI** — stable across releases,
+always resolving to the latest version:
+
+> Syed, H. A. *imdtrack: IMD North Indian Ocean cyclone best-track data as
+> pandas and xarray.* https://doi.org/10.5281/zenodo.XXXXXXXX
+
+GitHub's "Cite this repository" button reads [`CITATION.cff`](CITATION.cff).
 
 ## License
 
