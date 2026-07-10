@@ -26,12 +26,12 @@ jobs:
       contents: write   # create the GitHub Release (notes only)
       id-token: write   # trusted publishing to PyPI/TestPyPI (OIDC)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -55,7 +55,7 @@ jobs:
       # Marks the release in GitHub with auto-generated notes. No dist files are
       # attached — the artifacts live on PyPI/TestPyPI.
       - name: Create GitHub Release (notes only)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.ref || github.ref_name }}
           generate_release_notes: true
