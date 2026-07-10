@@ -20,4 +20,4 @@ keywords:
 # Zenodo Concept DOI (represents ALL versions and always resolves to the latest,
 # so it never changes between releases — this is the one to cite).
 # Fill this in after your first GitHub release has been archived by Zenodo.
-doi: 10.5281/zenodo.XXXXXXXX
+doi: 10.5281/zenodo.21301659

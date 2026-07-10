@@ -5,6 +5,7 @@
 [![Docs](https://readthedocs.org/projects/imdtrack/badge/?version=latest)](https://imdtrack.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/imdtrack.svg)](https://pypi.org/project/imdtrack/)
 [![Python versions](https://img.shields.io/pypi/pyversions/imdtrack.svg)](https://pypi.org/project/imdtrack/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21301659.svg)](https://doi.org/10.5281/zenodo.21301659)
 
 The [India Meteorological Department (RSMC New Delhi)](https://rsmcnewdelhi.imd.gov.in/)
 **cyclone best-track record** — every depression and cyclonic storm in the North
@@ -94,7 +95,7 @@ Please cite `imdtrack` via its Zenodo **Concept DOI** — stable across releases
 always resolving to the latest version:
 
 > Syed, H. A. *imdtrack: IMD North Indian Ocean cyclone best-track data as
-> pandas and xarray.* https://doi.org/10.5281/zenodo.XXXXXXXX
+> pandas and xarray.* https://doi.org/10.5281/zenodo.21301659
 
 GitHub's "Cite this repository" button reads [`CITATION.cff`](CITATION.cff).
 

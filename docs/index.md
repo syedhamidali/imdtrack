@@ -45,7 +45,7 @@ DOI** — this DOI represents all versions and always resolves to the latest, so
 it stays stable across releases:
 
 > Syed, H. A. *imdtrack: IMD North Indian Ocean cyclone best-track data as
-> pandas and xarray.* <https://doi.org/10.5281/zenodo.XXXXXXXX>
+> pandas and xarray.* <https://doi.org/10.5281/zenodo.21301659>
 
 The repository's [`CITATION.cff`](https://github.com/syedhamidali/imdtrack/blob/main/CITATION.cff)
 carries the machine-readable metadata (GitHub's "Cite this repository" button
