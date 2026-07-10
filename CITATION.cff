@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
-title: "imdtrack: IMD North Indian Ocean cyclone best-track data as pandas and xarray"
+title: "imdtrack: A Python library for the IMD North Indian Ocean cyclone best-track record"
 type: software
 authors:
   - family-names: Syed
