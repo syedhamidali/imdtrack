@@ -1,0 +1,173 @@
+"""High-level entry points: fetch + parse + cache, exposed as pandas / xarray."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Union
+
+import pandas as pd
+
+from . import fetch as _fetch
+from . import parse as _parse
+from .fetch import DEFAULT_URL
+
+PathLike = Union[str, Path]
+
+
+@dataclass
+class BestTracks:
+    """A parsed snapshot of the IMD best-track record.
+
+    Attributes
+    ----------
+    observations : one tidy row per 3-hourly fix (the main table).
+    remarks      : free-text landfall / weakening notes, linked by ``storm_id``.
+    storms       : one summary row per storm.
+    sha256       : content hash of the workbook these frames came from.
+    """
+
+    observations: pd.DataFrame
+    remarks: pd.DataFrame
+    storms: pd.DataFrame
+    sha256: Optional[str] = None
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Return the tidy observations frame (alias for ``.observations``)."""
+        return self.observations
+
+    def to_xarray(self):
+        """Return a 2-D ``(storm, step)`` :class:`xarray.Dataset`."""
+        from .dataset import to_xarray
+        return to_xarray(self.observations, self.storms)
+
+    def storm(self, storm_id: str) -> pd.DataFrame:
+        """Track for a single storm, sorted by time."""
+        return self.observations[self.observations["storm_id"] == storm_id]
+
+    def __repr__(self) -> str:
+        n_obs = len(self.observations)
+        n_storm = len(self.storms)
+        yrs = ""
+        if n_storm:
+            yrs = f", {int(self.storms['year'].min())}-{int(self.storms['year'].max())}"
+        return f"<BestTracks: {n_storm} storms, {n_obs} fixes{yrs}>"
+
+
+def _parquet_paths(cache_dir: Path):
+    return {name: cache_dir / f"{name}.parquet" for name in ("observations", "remarks", "storms")}
+
+
+def load(
+    update: bool = False,
+    source: str = "github",
+    url: str = DEFAULT_URL,
+    path: Optional[PathLike] = None,
+    cache_dir: Optional[PathLike] = None,
+    force: bool = False,
+) -> BestTracks:
+    """Load the best-track record as a :class:`BestTracks` bundle.
+
+    Parameters
+    ----------
+    update : if True, check the source for a newer copy and re-download when it
+             has changed (a cheap conditional GET, so it's a no-op when current).
+    source : where the data comes from.  ``"github"`` (default) downloads the
+             pre-parsed dataset published in the project's GitHub repo — no IMD
+             download or Excel parsing on your machine.  ``"imd"`` fetches and
+             parses the IMD workbook directly (the pipeline's path; needs the
+             ``pipeline`` extra for ``openpyxl``).
+    url    : IMD source workbook URL (only used when ``source="imd"``).
+    path   : parse this local ``.xlsx`` instead of fetching (overrides ``source``).
+    cache_dir : where to store downloaded files and any parsed cache.
+    force  : force a fresh download even if the cache looks current.
+
+    Parsed results (``source="imd"``) are cached as parquet keyed by the
+    workbook's content hash, so only a genuinely new file triggers a re-parse.
+    """
+    cache_dir = Path(cache_dir) if cache_dir else _fetch.default_cache_dir()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Default path for end users: pull the pre-parsed dataset from the repo.
+    if path is None and source == "github":
+        return _load_from_github(update=update or force, cache_dir=cache_dir)
+
+    if path is not None:
+        wb_path = Path(path)
+        sha = _fetch._sha256(wb_path)
+        changed = True
+    else:
+        if update or force or not _parquet_paths(cache_dir)["observations"].exists():
+            res = _fetch.fetch_workbook(url=url, cache_dir=cache_dir, force=force)
+            wb_path, sha, changed = res.path, res.sha256, res.changed
+        else:
+            # Offline fast path: reuse whatever we parsed last time.
+            wb_path, sha, changed = _fetch._workbook_path(cache_dir), None, False
+
+    pq = _parquet_paths(cache_dir)
+    sha_marker = cache_dir / "parsed.sha256"
+    cache_valid = (
+        not changed
+        and all(p.exists() for p in pq.values())
+        and (sha is None or (sha_marker.exists() and sha_marker.read_text().strip() == sha))
+    )
+
+    if cache_valid:
+        frames = {name: _read_parquet(p) for name, p in pq.items()}
+    else:
+        frames = _parse.parse_workbook(wb_path)
+        _write_cache(frames, pq, sha_marker, sha)
+
+    return BestTracks(
+        observations=frames["observations"],
+        remarks=frames["remarks"],
+        storms=frames["storms"],
+        sha256=sha,
+    )
+
+
+def _load_from_github(update: bool, cache_dir: Path) -> BestTracks:
+    """Load the pre-parsed dataset published in the GitHub repo."""
+    import json
+
+    from . import store
+
+    paths = _fetch.fetch_data_from_repo(cache_dir=cache_dir, update=update)
+    frames = store.read_frame_files(paths)
+
+    sha = None
+    try:
+        sha = json.loads(Path(paths["manifest"]).read_text()).get("source_sha256")
+    except (json.JSONDecodeError, OSError, KeyError):
+        pass
+
+    return BestTracks(
+        observations=frames["observations"],
+        remarks=frames["remarks"],
+        storms=frames["storms"],
+        sha256=sha,
+    )
+
+
+def update(**kwargs) -> BestTracks:
+    """Convenience wrapper for ``load(update=True, ...)``."""
+    kwargs.pop("update", None)
+    return load(update=True, **kwargs)
+
+
+def _read_parquet(path: Path) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    if "grade" in df.columns:
+        from . import _schema as S
+        df["grade"] = pd.Categorical(df["grade"], categories=S.GRADE_ORDER, ordered=True)
+    return df
+
+
+def _write_cache(frames, pq, sha_marker, sha):
+    try:
+        for name, p in pq.items():
+            frames[name].to_parquet(p, index=False)
+        if sha:
+            sha_marker.write_text(sha)
+    except Exception:
+        # Parquet needs pyarrow/fastparquet; caching is best-effort only.
+        pass

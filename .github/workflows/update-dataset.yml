@@ -1,0 +1,59 @@
+name: Update dataset
+
+# Rebuild the committed dataset from the IMD workbook once a month.
+# - If IMD hasn't changed, nothing is committed.
+# - If IMD changed and the new file parses + validates, data/ is updated and
+#   committed.
+# - If the new file fails to parse or validate, the job FAILS (red X + GitHub's
+#   failure notification email) and the committed dataset is left untouched.
+on:
+  schedule:
+    - cron: "0 6 1 * *"   # 06:00 UTC on the 1st of every month
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the IMD source is unchanged"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # needed to push the refreshed data/ back to the repo
+
+concurrency:
+  group: update-dataset
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package (with pipeline extra)
+        run: python -m pip install -e ".[all]"
+
+      # If this step exits non-zero (parse/validation failure) the job fails and
+      # no commit happens — the previous dataset stays in place.
+      - name: Rebuild dataset from IMD
+        run: |
+          imdtrack build --data-dir data \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '--force' || '' }}
+
+      - name: Commit and push if the dataset changed
+        run: |
+          if [ -n "$(git status --porcelain data)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data
+            git commit -m "data: monthly refresh from IMD best-track workbook"
+            git push
+            echo "Committed a dataset update."
+          else
+            echo "No dataset changes to commit."
+          fi

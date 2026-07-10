@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "imdtrack"
+version = "0.2.0"
+description = "IMD RSMC New Delhi cyclone best-track data as pandas DataFrames and xarray Datasets, kept up to date automatically."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "imdtrack contributors" }]
+keywords = ["cyclone", "best-track", "IMD", "meteorology", "xarray", "pandas", "north-indian-ocean"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "pandas>=1.5",
+    "pyarrow>=10.0",
+]
+
+[project.optional-dependencies]
+xarray = ["xarray>=2022.3", "numpy>=1.21"]
+# Parsing the raw IMD workbook (the update pipeline) needs openpyxl.
+pipeline = ["openpyxl>=3.0"]
+all = ["xarray>=2022.3", "numpy>=1.21", "openpyxl>=3.0"]
+dev = ["pytest>=7", "xarray>=2022.3", "numpy>=1.21", "pyarrow>=10.0", "openpyxl>=3.0"]
+
+[project.scripts]
+imdtrack = "imdtrack.cli:main"
+
+[project.urls]
+Homepage = "https://rsmcnewdelhi.imd.gov.in/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/imdtrack"]

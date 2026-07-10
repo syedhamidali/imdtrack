@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+*.xlsx
+*.parquet
+.cache/
+
+# ...but the *published* dataset committed by the pipeline must be tracked.
+!data/
+!data/*.parquet
+!data/manifest.json
