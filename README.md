@@ -5,41 +5,22 @@
 [![Docs](https://readthedocs.org/projects/imdtrack/badge/?version=latest)](https://imdtrack.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/imdtrack.svg)](https://pypi.org/project/imdtrack/)
 [![Python versions](https://img.shields.io/pypi/pyversions/imdtrack.svg)](https://pypi.org/project/imdtrack/)
-[![Update dataset](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml/badge.svg)](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml)
 
-Read the [India Meteorological Department (IMD) RSMC New Delhi](https://rsmcnewdelhi.imd.gov.in/)
-**cyclone best-track dataset** — the official record of every depression and
-cyclonic storm in the North Indian Ocean (Bay of Bengal & Arabian Sea) since
-1982 — as a tidy **pandas DataFrame** or a CF-style **xarray Dataset**, and keep
-it up to date automatically.
+The [India Meteorological Department (RSMC New Delhi)](https://rsmcnewdelhi.imd.gov.in/)
+**cyclone best-track record** — every depression and cyclonic storm in the North
+Indian Ocean (Bay of Bengal & Arabian Sea) since 1982 — as a tidy **pandas
+DataFrame** or a CF-style **xarray Dataset**, kept up to date automatically.
 
-IMD publishes the record as a single, frequently-updated Excel workbook (one
-sheet per year, 1982–present). That workbook is convenient for humans but awkward
-for analysis: column headers drift between years, serial numbers appear only on
-each storm's first row, numeric columns mix strings and floats, and free-text
-landfall/weakening notes are interleaved with the 3-hourly track rows. This
-library turns all of that into clean, analysis-ready tables.
-
-## How it works
-
-The **parsed dataset is committed into this repository** (under [`data/`](data/),
-as parquet + a `manifest.json`). A scheduled GitHub Action rebuilds it from the
-IMD workbook once a month. So:
-
-- **You** just download the pre-parsed parquet from the repo — no Excel parsing,
-  no scraping IMD on your machine. `imd.load()` fetches it (cached) and hands you
-  DataFrames / an xarray Dataset.
-- **The Action** does the heavy lifting: fetch → parse → **validate** → commit.
-  If a new IMD upload fails to parse or looks corrupt, the run **fails and the
-  committed dataset is left untouched** — a broken source file can never clobber
-  the good published data.
+IMD publishes the record as a single, hand-maintained Excel workbook. `imdtrack`
+turns it into clean, analysis-ready tables. The parsed dataset is committed to
+this repo (under [`data/`](data/)) and refreshed by a monthly GitHub Action, so
+`imd.load()` just downloads the pre-parsed data — no Excel parsing on your side.
 
 ## Install
 
 ```bash
 pip install imdtrack            # pandas + pyarrow (reads the published parquet)
 pip install imdtrack[xarray]    # + xarray/numpy for .to_xarray()
-pip install imdtrack[pipeline]  # + openpyxl, only needed to parse IMD yourself
 pip install imdtrack[all]       # everything
 ```
 
@@ -48,20 +29,13 @@ pip install imdtrack[all]       # everything
 ```python
 import imdtrack as imd
 
-bt = imd.load()                 # downloads the pre-parsed dataset from GitHub (cached)
+bt = imd.load()                 # pre-parsed dataset from GitHub (cached)
 df = bt.observations            # tidy DataFrame: one row per 3-hourly fix
 ds = bt.to_xarray()             # (storm, step) xarray.Dataset
 
-# Keep it current — re-downloads only if the repo published new data:
-bt = imd.load(update=True)
+bt = imd.load(update=True)      # re-download only if the repo published new data
 
-# Parse the IMD workbook directly instead of using the published dataset:
-bt = imd.load(source="imd")     # needs the [pipeline] extra (openpyxl)
-
-# One storm's track:
-bt.storm("2020-001")            # AMPHAN
-
-# Storm-level summary and the free-text notes:
+bt.storm("2020-001")            # one storm's track (AMPHAN)
 bt.storms                       # one row per storm (peak grade, max wind, ...)
 bt.remarks                      # landfall / weakening notes, linked by storm_id
 ```
@@ -87,10 +61,8 @@ bt.remarks                      # landfall / weakening notes, linked by storm_id
 ### The xarray Dataset
 
 Laid out like [IBTrACS](https://www.ncei.noaa.gov/products/international-best-track-archive):
-a ragged track becomes a 2-D `(storm, step)` grid, padded with `NaN`/`NaT`.
-Per-fix variables (`lat`, `lon`, `wind`, `pressure`, …) span both dims;
-storm-level metadata (`name`, `basin`, `year`, `serial`, `peak_grade`) are
-coordinates on the `storm` dimension.
+a ragged track becomes a 2-D `(storm, step)` grid. Per-fix variables span both
+dims; storm-level metadata (`name`, `basin`, `year`, …) are `storm` coordinates.
 
 ```python
 ds = bt.to_xarray()
@@ -98,62 +70,30 @@ ds.sel(storm="2020-001")["wind"].max()      # AMPHAN peak intensity
 ds.where(ds.basin == "ARB", drop=True)      # Arabian Sea storms only
 ```
 
+See the [documentation](https://imdtrack.readthedocs.io/) for a full walkthrough
+and a North Indian Ocean climatology example.
+
 ## Staying up to date
 
-The dataset in [`data/`](data/) is refreshed automatically by the
-[monthly GitHub Action](.github/workflows/update-dataset.yml). The pipeline:
-
-1. Downloads the current IMD workbook and hashes it. If it matches the published
-   `manifest.json`, there's nothing to do.
-2. Otherwise parses it and runs validators (positions in range, expected columns
-   present, record not mysteriously shrinking, plausible year range).
-3. Only if **every** check passes are the parquet files replaced (atomically)
-   and committed. If parsing or validation fails, the job exits non-zero — GitHub
-   emails the failure and **the committed dataset stays as it was**.
-
-You can run the same pipeline locally:
-
-```bash
-imdtrack build                     # fetch IMD → parse → validate → write ./data
-imdtrack build --force             # rebuild even if the source is unchanged
-imdtrack info                      # summary of the current record
-imdtrack update                    # refresh the cached copy from the repo
-imdtrack export tracks.parquet     # dump observations to CSV/Parquet
-```
-
-### Configuration
-
-The library needs to know which repo hosts the published data. It's baked into
-`imdtrack/_repo.py` but can be overridden:
-
-```bash
-export IMDTRACK_REPO=myuser/imdtrack   # owner/name of the data repo
-export IMDTRACK_BRANCH=main            # default: main
-export IMDTRACK_CACHE=/data/imd        # download cache (default: ~/.cache/imdtrack)
-```
+A [monthly GitHub Action](.github/workflows/update-dataset.yml) re-fetches the
+IMD workbook and, only if it parses and passes validation, updates `data/` — a
+broken upload can never overwrite the good published data. You normally don't
+have to do anything; `imd.load(update=True)` pulls the latest.
 
 ## Notes & caveats
 
 - Data © India Meteorological Department. This library only reformats it; verify
-  against IMD for operational use. The most recent season is marked *tentative*
-  by IMD until its post-season review.
-- Older years (pre-2000ish) often lack storm names and some fields (e.g. central
-  pressure); those appear as blanks / `NaN`.
-- Free-text annotation rows embedded in the sheets are not dropped — they are
-  parsed into `bt.remarks`.
+  against IMD for operational use. The most recent season is *tentative* until
+  IMD's post-season review.
+- Older years often lack storm names and some fields (e.g. central pressure);
+  those appear as `NaN`.
 
 ## Citation
 
-If you use `imdtrack` in your work, please cite it via its Zenodo **Concept
-DOI** — this DOI represents all versions and always resolves to the latest, so
-it stays stable across releases. See [`CITATION.cff`](CITATION.cff) (GitHub's
-"Cite this repository" button reads it). Replace `XXXXXXXX` with your Zenodo
-concept DOI once the first release is archived:
-
-```
-Syed, H. A. imdtrack: IMD North Indian Ocean cyclone best-track data as pandas
-and xarray. https://doi.org/10.5281/zenodo.XXXXXXXX
-```
+Please cite `imdtrack` via its Zenodo **Concept DOI** (stable across releases —
+always resolves to the latest version). GitHub's "Cite this repository" button
+reads [`CITATION.cff`](CITATION.cff). Replace `XXXXXXXX` with your concept DOI
+once the first release is archived on Zenodo.
 
 ## License
 
