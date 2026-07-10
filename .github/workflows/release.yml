@@ -1,10 +1,9 @@
 name: Release
 
-# Build once, then publish to TestPyPI + PyPI and cut a GitHub Release.
-# Triggered by:
-#   - pushing a version tag (v*), e.g. a manual `git tag v0.3.0 && git push --tags`
-#   - the update-dataset pipeline (workflow_call) after it bumps the version
-#   - manual dispatch
+# On a new release (a v* tag, or the update-dataset pipeline after it bumps the
+# version), build the distributions and publish them straight to TestPyPI + PyPI.
+# Nothing is uploaded to GitHub: no workflow artifacts, and the GitHub Release
+# carries notes only (no dist files attached).
 on:
   push:
     tags: ["v*"]
@@ -20,76 +19,43 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build sdist + wheel
+  release:
+    name: Build and publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub Release (notes only)
+      id-token: write   # trusted publishing to PyPI/TestPyPI (OIDC)
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Build
-        run: |
-          python -m pip install --upgrade build
-          python -m build
-      - name: Check metadata
-        run: |
-          python -m pip install --upgrade twine
-          twine check dist/*
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
 
-  testpypi:
-    name: Publish to TestPyPI
-    needs: build
-    runs-on: ubuntu-latest
-    environment: testpypi
-    permissions:
-      id-token: write   # trusted publishing (OIDC)
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
 
-  pypi:
-    name: Publish to PyPI
-    needs: build
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write   # trusted publishing (OIDC)
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
 
-  github-release:
-    name: GitHub Release
-    needs: [testpypi, pypi]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: softprops/action-gh-release@v2
+      # Marks the release in GitHub with auto-generated notes. No dist files are
+      # attached — the artifacts live on PyPI/TestPyPI.
+      - name: Create GitHub Release (notes only)
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.ref || github.ref_name }}
-          files: dist/*
           generate_release_notes: true
