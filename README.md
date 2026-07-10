@@ -142,6 +142,19 @@ export IMDTRACK_CACHE=/data/imd        # download cache (default: ~/.cache/imdtr
 - Free-text annotation rows embedded in the sheets are not dropped — they are
   parsed into `bt.remarks`.
 
+## Citation
+
+If you use `imdtrack` in your work, please cite it via its Zenodo **Concept
+DOI** — this DOI represents all versions and always resolves to the latest, so
+it stays stable across releases. See [`CITATION.cff`](CITATION.cff) (GitHub's
+"Cite this repository" button reads it). Replace `XXXXXXXX` with your Zenodo
+concept DOI once the first release is archived:
+
+```
+Syed, H. A. imdtrack: IMD North Indian Ocean cyclone best-track data as pandas
+and xarray. https://doi.org/10.5281/zenodo.XXXXXXXX
+```
+
 ## License
 
 BSD 3-Clause. See [LICENSE](LICENSE).
