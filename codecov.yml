@@ -1,0 +1,18 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto        # compare against the base commit
+        threshold: 2%        # allow small dips without failing
+    patch:
+      default:
+        target: 80%          # new/changed lines should be well covered
+        threshold: 5%
+
+comment:
+  layout: "reach, diff, flags, files"
+  require_changes: true      # only comment on PRs that move coverage
+
+# Don't count the CLI entry-shims / pipeline __main__ against coverage.
+ignore:
+  - "src/imdtrack/cli.py"

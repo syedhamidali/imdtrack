@@ -1,5 +1,9 @@
 # imdtrack
 
+[![CI](https://github.com/syedhamidali/imdtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/syedhamidali/imdtrack/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/syedhamidali/imdtrack/branch/main/graph/badge.svg)](https://codecov.io/gh/syedhamidali/imdtrack)
+[![Update dataset](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml/badge.svg)](https://github.com/syedhamidali/imdtrack/actions/workflows/update-dataset.yml)
+
 Read the [India Meteorological Department (IMD) RSMC New Delhi](https://rsmcnewdelhi.imd.gov.in/)
 **cyclone best-track dataset** — the official record of every depression and
 cyclonic storm in the North Indian Ocean (Bay of Bengal & Arabian Sea) since

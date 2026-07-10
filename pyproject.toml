@@ -26,7 +26,7 @@ xarray = ["xarray>=2022.3", "numpy>=1.21"]
 # Parsing the raw IMD workbook (the update pipeline) needs openpyxl.
 pipeline = ["openpyxl>=3.0"]
 all = ["xarray>=2022.3", "numpy>=1.21", "openpyxl>=3.0"]
-dev = ["pytest>=7", "xarray>=2022.3", "numpy>=1.21", "pyarrow>=10.0", "openpyxl>=3.0"]
+dev = ["pytest>=7", "pytest-cov>=4", "xarray>=2022.3", "numpy>=1.21", "pyarrow>=10.0", "openpyxl>=3.0"]
 
 [project.scripts]
 imdtrack = "imdtrack.cli:main"
@@ -36,3 +36,19 @@ Homepage = "https://rsmcnewdelhi.imd.gov.in/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/imdtrack"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["imdtrack"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

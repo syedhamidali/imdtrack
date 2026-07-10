@@ -5,6 +5,9 @@ build/
 dist/
 .venv/
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 *.xlsx
 *.parquet
 .cache/
