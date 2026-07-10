@@ -46,6 +46,10 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
+          # Both publishes share one dist/; let only the PyPI step generate the
+          # PEP 740 attestations, otherwise the second publish errors on the
+          # attestation files the first one left behind.
+          attestations: false
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
