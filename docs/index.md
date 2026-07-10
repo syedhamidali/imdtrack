@@ -12,6 +12,7 @@ pre-parsed data — no Excel scraping on your machine.
 :caption: Contents
 
 examples/quickstart
+examples/climatology
 api
 ```
 
