@@ -5,6 +5,7 @@ type: software
 authors:
   - family-names: Syed
     given-names: Hamid Ali
+    orcid: "https://orcid.org/0000-0002-7188-2544"
 repository-code: "https://github.com/syedhamidali/imdtrack"
 url: "https://imdtrack.readthedocs.io/"
 license: BSD-3-Clause
