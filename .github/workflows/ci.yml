@@ -72,8 +72,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install docs deps
-        run: python -m pip install -e ".[docs,xarray]"
+      - name: Install docs deps (same extra Read the Docs installs)
+        run: python -m pip install -e ".[docs]"
       # Build only, to catch broken docs on a push/PR. Nothing is uploaded or
       # published from here — the hosted docs (incl. per-PR previews) are built
       # by Read the Docs, not GitHub.
