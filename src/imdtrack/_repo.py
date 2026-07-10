@@ -14,8 +14,7 @@ from __future__ import annotations
 import os
 
 # ``owner/name`` of the GitHub repository hosting the committed dataset.
-# TODO: replace the placeholder with the real slug once the repo is created.
-DEFAULT_REPO = "OWNER/REPO"
+DEFAULT_REPO = "syedhamidali/imdtrack"
 DEFAULT_BRANCH = "main"
 
 # Directory (within the repo) that holds the committed parquet + manifest.
