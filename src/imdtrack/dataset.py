@@ -52,7 +52,7 @@ def to_xarray(observations: pd.DataFrame, storms: pd.DataFrame | None = None):
     for var in _OBS_VARS:
         col = obs[var]
         if var == "time":
-            grid = np.full((n_storm, max_step), np.datetime64("NaT"), dtype="datetime64[ns]")
+            grid = np.full((n_storm, max_step), np.datetime64("NaT", "ns"), dtype="datetime64[ns]")
             grid[rows, cols] = col.to_numpy(dtype="datetime64[ns]")
         elif var == "grade":
             grid = np.full((n_storm, max_step), "", dtype=object)
