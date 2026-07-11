@@ -19,7 +19,7 @@
 # you might with [tropycal](https://tropycal.github.io/) for other basins: we map
 # every track, look at where storms form, and build a climatology of frequency,
 # seasonality, and intensity for the two North Indian Ocean sub-basins — the
-# **Bay of Bengal (BOB)** and the **Arabian Sea (ARB)**.
+# **Bay of Bengal (BoB)** and the **Arabian Sea (ARB)**.
 #
 # Everything runs against the dataset committed in the repo, so the numbers and
 # figures below are real and regenerate on every docs build.
@@ -27,26 +27,51 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 import imdtrack as imd
 
+# ---- A small, consistent visual system -----------------------------------
+# Two sub-basins are an *identity* (categorical) encoding: one fixed hue each,
+# from a colourblind-safe pair (blue vs orange, ΔE well clear of the CVD floor).
+# Continuous intensity uses a single perceptually-uniform sequential map (viridis
+# — never a rainbow like jet/turbo). Text and chrome stay in neutral ink so the
+# colour only ever carries the sub-basin identity.
+BOB, ARB, OTHER = "#2a78d6", "#eb6834", "#b8b6ae"
+INK, INK2, MUTED, GRID, AXIS = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
+SEQ = "viridis"
+BASIN_COLORS = {"BOB": BOB, "ARB": ARB, "LAND": OTHER}
+BASIN_NAME = {"BOB": "Bay of Bengal", "ARB": "Arabian Sea", "LAND": "Land"}
+
 plt.rcParams.update(
     {
-        "figure.dpi": 110,
+        "figure.dpi": 120,
+        "savefig.bbox": "tight",
+        "font.size": 11,
+        "axes.titlesize": 13,
+        "axes.titleweight": "bold",
+        "axes.titlepad": 10,
+        "axes.titlecolor": INK,
+        "axes.labelsize": 10.5,
+        "axes.labelcolor": INK2,
+        "axes.edgecolor": AXIS,
+        "axes.linewidth": 0.8,
         "axes.grid": True,
-        "grid.alpha": 0.25,
+        "axes.axisbelow": True,
         "axes.spines.top": False,
         "axes.spines.right": False,
+        "grid.color": GRID,
+        "grid.linewidth": 0.8,
+        "xtick.color": MUTED,
+        "ytick.color": MUTED,
+        "xtick.labelcolor": INK2,
+        "ytick.labelcolor": INK2,
+        "text.color": INK,
+        "figure.facecolor": "white",
+        "axes.facecolor": "white",
+        "legend.frameon": False,
+        "legend.fontsize": 10,
     }
 )
-
-bt = imd.load()
-obs = bt.observations.copy()
-storms = bt.storms.copy()
-
-# A consistent colour per sub-basin, reused across every figure.
-BASIN_COLORS = {"BOB": "#1f77b4", "ARB": "#d62728", "LAND": "#7f7f7f"}
 
 
 def storm_label(row):
@@ -55,12 +80,13 @@ def storm_label(row):
     return name if isinstance(name, str) and name else row["storm_id"]
 
 
+bt = imd.load()
+obs = bt.observations.copy()
+storms = bt.storms.copy()
 bt
 
 # %% [markdown]
 # ## Headline numbers
-#
-# A quick orientation before the plots.
 
 # %%
 n_storms = len(storms)
@@ -82,51 +108,75 @@ print(
 # %% [markdown]
 # The Bay of Bengal produces the large majority of North Indian Ocean systems —
 # it is warmer, more humid, and its geometry funnels storms onto densely
-# populated coasts. The Arabian Sea is quieter, but as we'll see its activity has
-# not been steady over time.
+# populated coasts. The Arabian Sea is quieter, but, as we'll see, its activity
+# has not been steady over time.
 
 # %% [markdown]
 # ## Every track on one map
 #
 # Each line is one storm, coloured by its sub-basin. Even without coastlines the
-# shape of the basin is obvious: BOB tracks (blue) curve up towards the
-# north-east Indian and Bangladesh coasts, while ARB tracks (red) sit to the west.
+# shape of the basin is clear: Bay of Bengal tracks (blue) curve up toward the
+# north-east Indian and Bangladesh coasts, while Arabian Sea tracks (orange) sit
+# to the west.
 
 # %%
 storm_basin = storms.set_index("storm_id")["basin"]
 
-fig, ax = plt.subplots(figsize=(8, 7))
+fig, ax = plt.subplots(figsize=(8.5, 7.5), layout="constrained")
 for sid, g in obs.groupby("storm_id", sort=False):
     ax.plot(
         g["lon"],
         g["lat"],
-        color=BASIN_COLORS.get(storm_basin.get(sid), "#7f7f7f"),
-        lw=0.7,
-        alpha=0.5,
+        color=BASIN_COLORS.get(storm_basin.get(sid), OTHER),
+        lw=0.8,
+        alpha=0.45,
+        solid_capstyle="round",
     )
 
-# Region labels for orientation.
-ax.text(88, 15, "Bay of\nBengal", color=BASIN_COLORS["BOB"], fontsize=11, ha="center")
-ax.text(63, 15, "Arabian\nSea", color=BASIN_COLORS["ARB"], fontsize=11, ha="center")
-ax.text(80, 22, "India", color="0.4", fontsize=11, ha="center", style="italic")
+# Region labels sit in opposite corners (never over each other) with a soft
+# translucent plate so they stay legible on top of the tracks.
+plate = dict(boxstyle="round,pad=0.35", fc="white", ec="none", alpha=0.7)
+ax.text(
+    0.70,
+    0.12,
+    "Bay of Bengal",
+    transform=ax.transAxes,
+    color=BOB,
+    fontsize=12,
+    fontweight="bold",
+    ha="center",
+    bbox=plate,
+)
+ax.text(
+    0.30,
+    0.12,
+    "Arabian Sea",
+    transform=ax.transAxes,
+    color=ARB,
+    fontsize=12,
+    fontweight="bold",
+    ha="center",
+    bbox=plate,
+)
 
 handles = [
-    plt.Line2D([], [], color=c, lw=2, label=b)
-    for b, c in BASIN_COLORS.items()
+    plt.Line2D([], [], color=BASIN_COLORS[b], lw=2.5, label=BASIN_NAME[b])
+    for b in ("BOB", "ARB")
     if b in set(storm_basin)
 ]
-ax.legend(handles=handles, title="Sub-basin", loc="lower left")
+ax.legend(handles=handles, loc="upper left", title="Sub-basin", title_fontsize=10)
 ax.set_aspect("equal")
 ax.set_xlabel("Longitude (°E)")
 ax.set_ylabel("Latitude (°N)")
-ax.set_title(f"All IMD best tracks, {yr_min}–{yr_max}  (n={n_storms})")
+ax.set_title(f"All IMD best tracks, {yr_min}–{yr_max}  (n = {n_storms})")
+ax.grid(alpha=0.6)
 plt.show()
 
 # %% [markdown]
 # ## Where do storms form?
 #
-# The **genesis point** is the first fix of each track (`step == 0`). Colouring by
-# peak intensity shows that the strongest systems tend to originate in the
+# The **genesis point** is the first fix of each track (`step == 0`), coloured by
+# the storm's lifetime peak wind. The strongest systems tend to originate in the
 # southern/central Bay of Bengal, with room to intensify before landfall.
 
 # %%
@@ -134,28 +184,33 @@ genesis = obs[obs["step"] == 0].merge(
     storms[["storm_id", "peak_grade", "max_wind"]], on="storm_id", how="left"
 )
 
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(8.5, 6.5), layout="constrained")
 sc = ax.scatter(
     genesis["lon"],
     genesis["lat"],
     c=genesis["max_wind"],
-    cmap="turbo",
-    s=22,
-    alpha=0.8,
-    edgecolor="none",
+    cmap=SEQ,
+    s=38,
+    alpha=0.9,
+    edgecolor="white",
+    linewidth=0.4,
 )
+cb = fig.colorbar(sc, ax=ax, shrink=0.85, pad=0.02)
+cb.set_label("Lifetime peak wind (kt)", color=INK2)
+cb.outline.set_visible(False)
+cb.ax.tick_params(color=MUTED, labelcolor=INK2)
 ax.set_aspect("equal")
 ax.set_xlabel("Longitude (°E)")
 ax.set_ylabel("Latitude (°N)")
-ax.set_title("Genesis locations, coloured by lifetime peak wind")
-fig.colorbar(sc, ax=ax, label="Peak sustained wind (kt)")
+ax.set_title("Genesis locations, by lifetime peak intensity")
+ax.grid(alpha=0.6)
 plt.show()
 
 # %% [markdown]
 # ## Annual frequency, split by sub-basin
 #
-# Counts of named/numbered systems per year. The Bay of Bengal dominates almost
-# every season; the Arabian Sea contributes a smaller, more variable share.
+# Counts of systems per year. The Bay of Bengal dominates almost every season;
+# the Arabian Sea contributes a smaller, more variable share.
 
 # %%
 counts = (
@@ -168,19 +223,25 @@ for col in ("BOB", "ARB"):
     if col not in counts:
         counts[col] = 0
 
-fig, ax = plt.subplots(figsize=(10, 4.5))
-ax.bar(counts.index, counts["BOB"], color=BASIN_COLORS["BOB"], label="BOB")
+fig, ax = plt.subplots(figsize=(10, 4.6), layout="constrained")
+ax.bar(
+    counts.index, counts["BOB"], color=BOB, label="Bay of Bengal", edgecolor="white", linewidth=0.4
+)
 ax.bar(
     counts.index,
     counts["ARB"],
     bottom=counts["BOB"],
-    color=BASIN_COLORS["ARB"],
-    label="ARB",
+    color=ARB,
+    label="Arabian Sea",
+    edgecolor="white",
+    linewidth=0.4,
 )
+ax.set_xticks([y for y in counts.index if y % 5 == 0])
 ax.set_xlabel("Year")
 ax.set_ylabel("Number of systems")
 ax.set_title("North Indian Ocean systems per year")
-ax.legend()
+ax.grid(axis="x", visible=False)
+ax.legend(loc="upper right", ncol=2)
 plt.show()
 
 # %% [markdown]
@@ -215,8 +276,7 @@ print(
 #
 # Unlike most basins, the North Indian Ocean has a **bimodal** season: the summer
 # monsoon suppresses cyclogenesis, leaving two peaks — a **pre-monsoon** peak
-# (April–June) and a stronger **post-monsoon** peak (October–December). Grouping
-# genesis month by sub-basin shows this clearly.
+# (April–June) and a stronger **post-monsoon** peak (October–December).
 
 # %%
 gen_month = storms.assign(month=storms["start_time"].dt.month)
@@ -232,39 +292,62 @@ for col in ("BOB", "ARB"):
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 x = np.arange(12)
-fig, ax = plt.subplots(figsize=(9, 4.5))
-ax.bar(x - 0.2, season["BOB"], width=0.4, color=BASIN_COLORS["BOB"], label="BOB")
-ax.bar(x + 0.2, season["ARB"], width=0.4, color=BASIN_COLORS["ARB"], label="ARB")
-ax.axvspan(2.5, 5.5, color="orange", alpha=0.08)
-ax.axvspan(8.5, 11.5, color="purple", alpha=0.08)
+fig, ax = plt.subplots(figsize=(9.5, 4.8), layout="constrained")
+ax.bar(x - 0.21, season["BOB"], width=0.4, color=BOB, label="Bay of Bengal")
+ax.bar(x + 0.21, season["ARB"], width=0.4, color=ARB, label="Arabian Sea")
+
+# Shade the two active seasons and label them *above* the axes, clear of the bars.
+xtr = ax.get_xaxis_transform()
+for lo, hi, name in [(2.5, 5.5, "Pre-monsoon"), (8.5, 11.5, "Post-monsoon")]:
+    ax.axvspan(lo, hi, color=MUTED, alpha=0.06, zorder=0)
+    ax.text(
+        (lo + hi) / 2,
+        1.02,
+        name,
+        transform=xtr,
+        ha="center",
+        va="bottom",
+        fontsize=9.5,
+        color=INK2,
+        fontweight="bold",
+    )
+
 ax.set_xticks(x)
 ax.set_xticklabels(months)
 ax.set_xlabel("Genesis month")
 ax.set_ylabel("Number of systems")
-ax.set_title("Seasonal cycle of cyclogenesis (shaded: pre- and post-monsoon peaks)")
-ax.legend()
+ax.set_title("Seasonal cycle of cyclogenesis")
+ax.grid(axis="x", visible=False)
+ax.legend(loc="upper center", ncol=2)
+ax.margins(y=0.18)  # headroom for the season labels
 plt.show()
 
 # %% [markdown]
 # ## Intensity distribution
 #
-# IMD classifies systems on an ordered scale from Depression (`D`) up to Super
-# Cyclonic Storm (`SuCS`). Most systems never get past Cyclonic Storm; only a
-# handful each decade reach the top categories.
+# IMD grades systems on an ordered scale from Depression (`D`) to Super Cyclonic
+# Storm (`SuCS`). Most never get past Cyclonic Storm; only a handful each decade
+# reach the top categories. A horizontal layout keeps the category names readable
+# and the counts labelled directly.
 
 # %%
 from imdtrack import GRADE_LONG, GRADE_ORDER  # noqa: E402
 
 grade_counts = storms["peak_grade"].value_counts().reindex(GRADE_ORDER, fill_value=0)
+# Ordinal shading: weaker grades lighter, stronger darker (implies intensity).
+ramp = plt.cm.Blues(np.linspace(0.35, 0.92, len(GRADE_ORDER)))
+ypos = np.arange(len(GRADE_ORDER))
 
-fig, ax = plt.subplots(figsize=(9, 4.5))
-ax.bar(range(len(GRADE_ORDER)), grade_counts.values, color="#4c72b0")
-ax.set_xticks(range(len(GRADE_ORDER)))
-ax.set_xticklabels([f"{g}\n{GRADE_LONG[g].split()[0]}" for g in GRADE_ORDER], fontsize=8)
-ax.set_ylabel("Number of systems (by lifetime peak grade)")
+fig, ax = plt.subplots(figsize=(8.5, 4.8), layout="constrained")
+bars = ax.barh(ypos, grade_counts.values, color=ramp, edgecolor="white", linewidth=0.5)
+ax.set_yticks(ypos)
+ax.set_yticklabels([f"{g} · {GRADE_LONG[g]}" for g in GRADE_ORDER], fontsize=9.5)
+ax.invert_yaxis()  # strongest at the bottom, weakest at top
+ax.bar_label(bars, padding=4, color=INK2, fontsize=9.5)
+ax.set_xlabel("Number of systems (by lifetime peak grade)")
 ax.set_title("Distribution of peak intensity")
-for i, v in enumerate(grade_counts.values):
-    ax.text(i, v, str(int(v)), ha="center", va="bottom", fontsize=8)
+ax.grid(axis="y", visible=False)
+ax.margins(x=0.10)  # room for the count labels
 plt.show()
 
 # %% [markdown]
@@ -272,10 +355,10 @@ plt.show()
 #
 # [Accumulated Cyclone Energy](https://en.wikipedia.org/wiki/Accumulated_cyclone_energy)
 # (ACE) sums the square of the maximum sustained wind over a storm's life, counting
-# only fixes at tropical-storm strength (≥ 34 kt) and at 6-hourly (synoptic)
-# times. The IMD record is 3-hourly, so we subsample to the synoptic hours to
-# approximate the standard definition. Treat this as an *ACE-like* index rather
-# than an official value.
+# only fixes at tropical-storm strength (≥ 34 kt) at 6-hourly (synoptic) times. The
+# IMD record is 3-hourly, so we subsample to the synoptic hours to approximate the
+# standard definition — treat this as an *ACE-like* index rather than an official
+# value.
 
 # %%
 syn = obs[obs["time"].dt.hour.isin([0, 6, 12, 18])]
@@ -283,13 +366,29 @@ syn = syn[syn["wind"] >= 34.0]
 ace = 1e-4 * (syn["wind"] ** 2)
 ace_year = ace.groupby(syn["year"]).sum().reindex(range(yr_min, yr_max + 1), fill_value=0)
 
-fig, ax = plt.subplots(figsize=(10, 4.5))
-ax.bar(ace_year.index, ace_year.values, color="#55a868")
-ax.axhline(ace_year.mean(), color="0.3", ls="--", lw=1, label="period mean")
+fig, ax = plt.subplots(figsize=(10, 4.6), layout="constrained")
+ax.bar(ace_year.index, ace_year.values, color="#1baf7a", edgecolor="white", linewidth=0.4)
+ax.axhline(ace_year.mean(), color=INK2, ls="--", lw=1, zorder=3)
+ax.text(yr_min, ace_year.mean(), "  period mean", va="bottom", ha="left", fontsize=9, color=INK2)
+
+# Label just the single busiest season, offset above its bar (no collisions).
+peak_year = int(ace_year.idxmax())
+ax.annotate(
+    str(peak_year),
+    xy=(peak_year, ace_year.loc[peak_year]),
+    xytext=(0, 8),
+    textcoords="offset points",
+    ha="center",
+    fontsize=9,
+    fontweight="bold",
+    color=INK2,
+)
+ax.set_xticks([y for y in ace_year.index if y % 5 == 0])
 ax.set_xlabel("Year")
 ax.set_ylabel("ACE-like index (10$^4$ kt$^2$)")
 ax.set_title("Basin-wide seasonal activity (ACE-like)")
-ax.legend()
+ax.grid(axis="x", visible=False)
+ax.margins(y=0.12)
 plt.show()
 
 # %% [markdown]
@@ -307,18 +406,46 @@ top10
 # ### Track of the most intense system
 #
 # Colouring a single track by wind speed shows the classic
-# intensification-then-landfall life cycle.
+# intensification-then-landfall life cycle. Genesis and lifetime-peak points are
+# marked directly.
 
 # %%
-track = bt.storm(strongest["storm_id"])
-fig, ax = plt.subplots(figsize=(7, 6))
-ax.plot(track["lon"], track["lat"], color="0.7", lw=1, zorder=0)
-sc = ax.scatter(track["lon"], track["lat"], c=track["wind"], cmap="turbo", s=40)
+track = bt.storm(strongest["storm_id"]).reset_index(drop=True)
+peak_i = int(track["wind"].idxmax())
+
+fig, ax = plt.subplots(figsize=(7.5, 6.5), layout="constrained")
+ax.plot(track["lon"], track["lat"], color=AXIS, lw=1.2, zorder=0)
+sc = ax.scatter(
+    track["lon"],
+    track["lat"],
+    c=track["wind"],
+    cmap=SEQ,
+    s=48,
+    edgecolor="white",
+    linewidth=0.4,
+    zorder=2,
+)
+cb = fig.colorbar(sc, ax=ax, shrink=0.85, pad=0.02)
+cb.set_label("Sustained wind (kt)", color=INK2)
+cb.outline.set_visible(False)
+cb.ax.tick_params(color=MUTED, labelcolor=INK2)
+
+for i, tag, dx, dy in [(0, "genesis", 10, 10), (peak_i, "peak", 10, -14)]:
+    ax.annotate(
+        tag,
+        xy=(track["lon"][i], track["lat"][i]),
+        xytext=(dx, dy),
+        textcoords="offset points",
+        fontsize=9,
+        color=INK2,
+        fontweight="bold",
+        arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8),
+    )
 ax.set_aspect("equal")
 ax.set_xlabel("Longitude (°E)")
 ax.set_ylabel("Latitude (°N)")
 ax.set_title(f"{storm_label(strongest)} — peak {strongest['max_wind']:.0f} kt")
-fig.colorbar(sc, ax=ax, label="Sustained wind (kt)")
+ax.grid(alpha=0.6)
 plt.show()
 
 # %% [markdown]

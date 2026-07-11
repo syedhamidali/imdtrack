@@ -89,16 +89,21 @@ def validate_frames(frames: dict) -> None:
     if obs["time"].isna().all():
         raise ValidationError("observations['time'] is entirely null")
 
-    # Positions must be present and physically plausible for the North Indian Ocean.
-    for col, lo, hi in (("lat", -90.0, 90.0), ("lon", 0.0, 180.0)):
+    # Positions must be present and plausible for the North Indian Ocean basin.
+    # Tight bounds (not the full globe) so coordinate corruption — a mis-detected
+    # column, or the "lat/lon" packed-string bug that made lon == lat — is caught
+    # rather than passing as "somewhere on Earth". A small tail is tolerated for
+    # rare Andaman/recurving excursions.
+    for col, lo, hi in (("lat", -5.0, 32.0), ("lon", 40.0, 105.0)):
         vals = pd.to_numeric(obs[col], errors="coerce")
         if vals.isna().all():
             raise ValidationError(f"observations['{col}'] is entirely null")
         bad_frac = ((vals < lo) | (vals > hi)).mean()
         if bad_frac > 0.01:
             raise ValidationError(
-                f"{bad_frac:.1%} of '{col}' values fall outside [{lo}, {hi}] "
-                "— column likely mis-detected"
+                f"{bad_frac:.1%} of '{col}' values fall outside the plausible "
+                f"North Indian Ocean range [{lo}, {hi}] — likely a coordinate "
+                "parsing error"
             )
 
     yr_min, yr_max = int(obs["year"].min()), int(obs["year"].max())

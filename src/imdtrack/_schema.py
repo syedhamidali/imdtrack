@@ -152,6 +152,24 @@ def to_float(value) -> float:
     return float(m.group()) if m else math.nan
 
 
+def parse_latlon(lat_raw, lon_raw) -> tuple[float, float]:
+    """Return ``(lat, lon)`` as floats, handling the packed ``"lat/lon"`` form.
+
+    Some rows (e.g. 2013 LEHAR/MADI) pack both coordinates into a single string
+    like ``"8.5/96.5"`` — and put it in *both* the latitude and longitude cells.
+    Naively taking the leading number gives ``lon == lat``. Detect the pair and
+    split it; otherwise coerce each cell independently.
+    """
+    for cell in (lat_raw, lon_raw):
+        if isinstance(cell, str) and "/" in cell:
+            parts = cell.split("/")
+            if len(parts) == 2:
+                a, b = to_float(parts[0]), to_float(parts[1])
+                if a == a and b == b:  # both parsed (not NaN)
+                    return a, b
+    return to_float(lat_raw), to_float(lon_raw)
+
+
 def parse_date(value) -> Optional[datetime]:
     """Parse a Date cell to a ``datetime`` (date part only), or None.
 

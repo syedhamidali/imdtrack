@@ -63,6 +63,64 @@ def _write(tmp_path, sheets):
 
 
 @pytest.mark.parametrize(
+    "lat_raw,lon_raw,expected",
+    [
+        ("8.5/96.5", "8.5/96.5", (8.5, 96.5)),  # packed in both cells (2013 LEHAR)
+        ("12.0", "88.0", (12.0, 88.0)),  # normal separate cells
+        ("10.0/95.0", None, (10.0, 95.0)),  # packed only in the lat cell
+    ],
+)
+def test_parse_latlon(lat_raw, lon_raw, expected):
+    assert S.parse_latlon(lat_raw, lon_raw) == expected
+
+
+def test_latlon_pair_string_is_split(tmp_path):
+    """Some rows pack 'lat/lon' into one string in both coordinate cells; without
+    splitting, lon wrongly equals lat (2013 LEHAR/MADI tracked at ~8°E instead
+    of ~96°E)."""
+    rows = [
+        HEADER_14,
+        [
+            9,
+            "BOB",
+            "LEHAR",
+            datetime(2013, 11, 23),
+            "1200",
+            "8.5/96.5",
+            "8.5/96.5",
+            1.5,
+            "1004",
+            "25",
+            "3",
+            "D",
+            "",
+            "",
+        ],
+        [
+            None,
+            "BOB",
+            "LEHAR",
+            None,
+            "1800",
+            "9.0/96.0",
+            "9.0/96.0",
+            2,
+            "1002",
+            "30",
+            "5",
+            "DD",
+            "",
+            "",
+        ],
+    ]
+    res = parse_workbook(_write(tmp_path, {"2013": rows}))
+    o = res["observations"]
+    assert len(o) == 2
+    assert o["lat"].iloc[0] == 8.5 and o["lon"].iloc[0] == 96.5
+    assert o["lon"].iloc[1] == 96.0
+
+
+@pytest.mark.parametrize(
     "raw,expected",
     [
         ("16-06-2008", datetime(2008, 6, 16)),

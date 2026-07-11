@@ -102,8 +102,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
             cur_date = date_cell
 
         minutes = S.parse_time(get(row, "time"))
-        lat = S.to_float(get(row, "lat"))
-        lon = S.to_float(get(row, "lon"))
+        lat, lon = S.parse_latlon(get(row, "lat"), get(row, "lon"))
 
         is_track = (
             cur_serial is not None
