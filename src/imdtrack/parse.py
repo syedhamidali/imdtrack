@@ -66,24 +66,36 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
     cur_basin = None
     cur_name = None
     cur_date = None
+    storm_no = 0
+    separator_seen = True  # start of sheet counts as a storm boundary
 
     for row in rows:
         if not any(c is not None for c in row):
-            continue  # fully blank separator row
+            separator_seen = True  # blank rows separate storms
+            continue
 
         serial = get(row, "serial")
+        serial_val = None
         if serial is not None:
             try:
-                new_serial = int(float(serial))
-                if new_serial != cur_serial:
-                    # New storm begins: don't let the previous storm's name /
-                    # basin / date forward-fill into it.
-                    cur_name = None
-                    cur_basin = None
-                    cur_date = None
-                cur_serial = new_serial
+                serial_val = int(float(serial))
             except (TypeError, ValueError):
-                pass  # keep previous serial for spill-over rows
+                serial_val = None
+
+        # A serial appears only on a storm's first row (merged cell), so its
+        # presence after a separator — or with a changed value — marks a new
+        # storm. IMD restarts the serial per basin in older years, so keying on
+        # (year, serial) merges e.g. ARB #1 with BOB #1; track a running storm
+        # number per sheet instead so every storm gets a unique id.
+        if serial_val is not None and (separator_seen or serial_val != cur_serial):
+            storm_no += 1
+            cur_serial = serial_val
+            cur_name = None  # don't let the previous storm's fields forward-fill in
+            cur_basin = None
+            cur_date = None
+        elif serial_val is not None:
+            cur_serial = serial_val
+        separator_seen = False
 
         basin = S.normalize_basin(get(row, "basin"))
         if basin is not None:
@@ -105,7 +117,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
         lat, lon = S.parse_latlon(get(row, "lat"), get(row, "lon"))
 
         is_track = (
-            cur_serial is not None
+            storm_no > 0
             and isinstance(cur_date, datetime)
             and minutes is not None
             and lat == lat  # not NaN
@@ -116,6 +128,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
             observations.append(
                 {
                     "year": year,
+                    "storm_no": storm_no,
                     "serial": cur_serial,
                     "basin": cur_basin,
                     "name": cur_name,
@@ -131,12 +144,13 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
                     "oci_diameter": S.to_float(get(row, "oci_diameter")),
                 }
             )
-        elif cur_serial is not None:
+        elif storm_no > 0:
             text = _remark_text(row)
             if text:
                 remarks.append(
                     {
                         "year": year,
+                        "storm_no": storm_no,
                         "serial": cur_serial,
                         "date": cur_date if isinstance(cur_date, datetime) else pd.NaT,
                         "remark": text,
@@ -198,8 +212,8 @@ def count_positional_rows(path: PathLike) -> dict[int, int]:
     return counts
 
 
-def _storm_id(year: int, serial: int) -> str:
-    return f"{year}-{serial:03d}"
+def _storm_id(year: int, storm_no: int) -> str:
+    return f"{year}-{storm_no:03d}"
 
 
 def parse_workbook(path: PathLike) -> dict[str, pd.DataFrame]:
@@ -219,21 +233,23 @@ def parse_workbook(path: PathLike) -> dict[str, pd.DataFrame]:
 
     obs = pd.DataFrame(
         all_obs,
-        columns=["year", "serial", "basin", "name", "time"]
+        columns=["year", "storm_no", "serial", "basin", "name", "time"]
         + [f for f in S.FIELDS if f in S.NUMERIC_FIELDS]
         + ["grade"],
     )
     if not obs.empty:
-        obs.insert(0, "storm_id", [_storm_id(y, s) for y, s in zip(obs["year"], obs["serial"])])
+        obs.insert(0, "storm_id", [_storm_id(y, n) for y, n in zip(obs["year"], obs["storm_no"])])
+        obs = obs.drop(columns="storm_no")
         obs["grade"] = pd.Categorical(obs["grade"], categories=S.GRADE_ORDER, ordered=True)
         obs["basin"] = obs["basin"].astype("category")
-        obs = obs.sort_values(["year", "serial", "time"], kind="stable").reset_index(drop=True)
+        obs = obs.sort_values(["storm_id", "time"], kind="stable").reset_index(drop=True)
         # observation index within each storm (0-based)
         obs["step"] = obs.groupby("storm_id", sort=False).cumcount()
 
-    rem = pd.DataFrame(all_rem, columns=["year", "serial", "date", "remark"])
+    rem = pd.DataFrame(all_rem, columns=["year", "storm_no", "serial", "date", "remark"])
     if not rem.empty:
-        rem.insert(0, "storm_id", [_storm_id(y, s) for y, s in zip(rem["year"], rem["serial"])])
+        rem.insert(0, "storm_id", [_storm_id(y, n) for y, n in zip(rem["year"], rem["storm_no"])])
+        rem = rem.drop(columns="storm_no")
 
     storms = _summarize_storms(obs)
     return {"observations": obs, "remarks": rem, "storms": storms}

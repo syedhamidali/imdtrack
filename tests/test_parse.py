@@ -151,6 +151,59 @@ def test_text_string_dates_are_parsed(tmp_path):
     assert obs["time"].iloc[2] == datetime(2008, 6, 17, 3, 0)
 
 
+def test_per_basin_serial_does_not_merge_storms(tmp_path):
+    """IMD restarts the serial number per basin in older years (ARB 1,2 then
+    BOB 1,2). Keying storms on (year, serial) would merge ARB #1 with BOB #1;
+    each must stay a separate storm with a unique id."""
+    d1, d2 = datetime(1993, 11, 12), datetime(1993, 12, 1)
+    rows = [
+        HEADER_14,
+        [1, "ARB", None, d1, "0300", 15.0, 68.0, 1.5, "1000", "25", "3", "D", "", ""],
+        [
+            2,
+            "ARB",
+            None,
+            datetime(1993, 11, 8),
+            "0300",
+            12.0,
+            66.0,
+            1.5,
+            "1000",
+            "25",
+            "3",
+            "D",
+            "",
+            "",
+        ],
+        [],  # blank separator between basins
+        [1, "BOB", None, d2, "0600", 12.0, 88.0, 2.0, "990", "90", "42", "ESCS", "", ""],
+        [
+            2,
+            "BOB",
+            None,
+            datetime(1993, 12, 19),
+            "0000",
+            14.0,
+            90.0,
+            1.5,
+            "998",
+            "30",
+            "5",
+            "DD",
+            "",
+            "",
+        ],
+    ]
+    res = parse_workbook(_write(tmp_path, {"1993": rows}))
+    storms = res["storms"]
+    assert len(storms) == 4  # not 2 — ARB #1/#2 and BOB #1/#2 are distinct
+    assert storms["storm_id"].tolist() == ["1993-001", "1993-002", "1993-003", "1993-004"]
+    by_id = storms.set_index("storm_id")
+    assert by_id.loc["1993-001", "basin"] == "ARB"
+    assert by_id.loc["1993-003", "basin"] == "BOB"
+    assert by_id.loc["1993-003", "peak_grade"] == "ESCS"
+
+
 def test_merged_date_cell_is_forward_filled(tmp_path):
     """The Date column is a merged cell: it is populated only on the first row of
     each day and ``None`` on the 3-hourly rows below. All those fixes must still
