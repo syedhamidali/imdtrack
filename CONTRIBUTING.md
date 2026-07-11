@@ -5,22 +5,23 @@ Thanks for helping! Bug reports, fixes, and features are all welcome via
 
 ## Development setup ([uv](https://docs.astral.sh/uv/))
 
-[uv](https://docs.astral.sh/uv/) is the fastest way to get a dev environment:
+[uv](https://docs.astral.sh/uv/) is the fastest way to get a dev environment.
+`uv sync` installs the **exact, locked** dependencies from `uv.lock` into `.venv`:
 
 ```bash
-uv venv                                    # create .venv (uv picks a Python)
-uv pip install -e ".[dev,plot,docs]"       # all dev/test/plot/docs deps
+uv sync --extra dev --extra plot --extra docs   # everything, reproducibly
 ```
 
 (Plain `pip` works too: `pip install -e ".[dev]"`.) The version is derived from
-git tags by [hatch-vcs](https://github.com/ofek/hatch-vcs), so no
-`__version__` to edit.
+git tags by [hatch-vcs](https://github.com/ofek/hatch-vcs), so there's no
+`__version__` to edit. If you change dependencies in `pyproject.toml`, refresh
+the lock with `uv lock` and commit it.
 
 ## Checks
 
 ```bash
-pytest                 # tests (cartopy plot tests skip if cartopy is absent)
-black . && ruff check .  # format + lint
+uv run pytest                     # tests (cartopy plot tests skip without cartopy)
+uv run black . && uv run ruff check .   # format + lint
 ```
 
 Install the pre-commit hooks so these run automatically:
