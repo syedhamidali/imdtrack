@@ -245,6 +245,10 @@ def parse_workbook(path: PathLike) -> dict[str, pd.DataFrame]:
         obs = obs.sort_values(["storm_id", "time"], kind="stable").reset_index(drop=True)
         # observation index within each storm (0-based)
         obs["step"] = obs.groupby("storm_id", sort=False).cumcount()
+        # Non-destructive QC: flag isolated position spikes (source data errors).
+        from . import qc
+
+        obs["pos_suspect"] = qc.flag_positions(obs)
 
     rem = pd.DataFrame(all_rem, columns=["year", "storm_no", "serial", "date", "remark"])
     if not rem.empty:

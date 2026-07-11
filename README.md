@@ -81,6 +81,19 @@ IMD workbook and, only if it parses and passes validation, updates `data/` — a
 broken upload can never overwrite the good published data. You normally don't
 have to do anything; `imd.load(update=True)` pulls the latest.
 
+## Data quality
+
+The library mirrors the IMD workbook faithfully, including its occasional
+data-entry errors. A conservative, **non-destructive** check flags fixes whose
+coordinates imply an impossible jump (an isolated position spike) via a
+`pos_suspect` column — the source values are never altered:
+
+```python
+bt = imd.load()
+bt.observations.query("pos_suspect")   # inspect the flagged fixes
+bt.clean()                             # drop them  (or clean(how="mask") to null lat/lon)
+```
+
 ## Notes & caveats
 
 - Data © India Meteorological Department. This library only reformats it; verify

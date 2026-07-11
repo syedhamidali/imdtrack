@@ -47,6 +47,33 @@ class BestTracks:
         """Track for a single storm, sorted by time."""
         return self.observations[self.observations["storm_id"] == storm_id]
 
+    def clean(self, how: str = "drop") -> BestTracks:
+        """Return a copy with QC-flagged position spikes handled.
+
+        ``pos_suspect`` marks fixes whose coordinates imply an impossible jump
+        (source data-entry errors); this never touches the source in place.
+
+        how : ``"drop"`` removes flagged fixes (and renumbers ``step``);
+              ``"mask"`` keeps the rows but nulls their ``lat``/``lon``.
+        """
+        obs = self.observations.copy()
+        if "pos_suspect" not in obs.columns or not obs["pos_suspect"].any():
+            return BestTracks(obs, self.remarks.copy(), self.storms.copy(), self.sha256)
+
+        if how == "drop":
+            obs = obs[~obs["pos_suspect"]].reset_index(drop=True)
+            obs["step"] = obs.groupby("storm_id", sort=False).cumcount()
+        elif how == "mask":
+            import numpy as np
+
+            obs.loc[obs["pos_suspect"], ["lat", "lon"]] = np.nan
+        else:
+            raise ValueError("how must be 'drop' or 'mask'")
+
+        from .parse import _summarize_storms
+
+        return BestTracks(obs, self.remarks.copy(), _summarize_storms(obs), self.sha256)
+
     def __repr__(self) -> str:
         n_obs = len(self.observations)
         n_storm = len(self.storms)

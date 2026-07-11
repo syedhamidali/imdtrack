@@ -20,6 +20,7 @@ from .core import BestTracks, load, update
 from .fetch import DEFAULT_URL, fetch_data_from_repo, fetch_workbook
 from .parse import parse_workbook
 from .pipeline import build
+from .qc import flag_positions
 
 __all__ = [
     "load",
@@ -29,10 +30,11 @@ __all__ = [
     "parse_workbook",
     "fetch_workbook",
     "fetch_data_from_repo",
+    "flag_positions",
     "DEFAULT_URL",
     "GRADE_ORDER",
     "GRADE_LONG",
     "VALID_BASINS",
 ]
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
