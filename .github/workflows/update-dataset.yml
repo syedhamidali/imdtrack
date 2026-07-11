@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # tags needed so hatch-vcs derives the version
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -48,7 +50,7 @@ jobs:
           imdtrack build --data-dir data \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '--force' || '' }}
 
-      - name: Commit, bump version, and tag if the dataset changed
+      - name: Commit and tag if the dataset changed
         id: commit
         run: |
           if [ -z "$(git status --porcelain data)" ]; then
@@ -60,27 +62,25 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Bump the patch version (single source of truth: __init__.py).
-          NEW_VERSION="$(python - <<'PY'
-          import pathlib, re
-          p = pathlib.Path("src/imdtrack/__init__.py")
-          s = p.read_text()
-          m = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)"', s)
+          # Version comes from the git tag (hatch-vcs): bump the patch of the
+          # latest v* tag. No source file to edit.
+          LATEST="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo v0.0.0)"
+          NEW_VERSION="$(python - "$LATEST" <<'PY'
+          import re, sys
+          m = re.match(r"v(\d+)\.(\d+)\.(\d+)", sys.argv[1])
           major, minor, patch = map(int, m.groups())
-          new = f"{major}.{minor}.{patch + 1}"
-          p.write_text(s[:m.start()] + f'__version__ = "{new}"' + s[m.end():])
-          print(new)
+          print(f"v{major}.{minor}.{patch + 1}")
           PY
           )"
 
-          git add data src/imdtrack/__init__.py
-          git commit -m "data: refresh from IMD best-track workbook (v${NEW_VERSION})"
-          git tag "v${NEW_VERSION}"
+          git add data
+          git commit -m "data: refresh from IMD best-track workbook (${NEW_VERSION})"
+          git tag "${NEW_VERSION}"
           git push origin HEAD --follow-tags
 
-          echo "Committed dataset update and tagged v${NEW_VERSION}."
+          echo "Committed dataset update and tagged ${NEW_VERSION}."
           echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
   # Publish only when the dataset actually changed. Reuses the release pipeline
   # (build -> TestPyPI -> PyPI -> GitHub Release) against the freshly-created tag.

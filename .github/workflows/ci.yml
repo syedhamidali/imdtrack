@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # tags for hatch-vcs version
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -39,6 +41,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # tags for hatch-vcs version
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -68,6 +72,8 @@ jobs:
     needs: [test, lint]
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # tags for hatch-vcs version
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
