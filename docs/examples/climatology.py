@@ -122,7 +122,7 @@ print(
 # %%
 storm_basin = storms.set_index("storm_id")["basin"]
 
-fig, ax = plt.subplots(figsize=(8.5, 7.5), layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 5.8), layout="constrained")
 for sid, g in obs.groupby("storm_id", sort=False):
     ax.plot(
         g["lon"],
@@ -133,26 +133,32 @@ for sid, g in obs.groupby("storm_id", sort=False):
         solid_capstyle="round",
     )
 
-# Region labels sit in opposite corners (never over each other) with a soft
-# translucent plate so they stay legible on top of the tracks.
-plate = dict(boxstyle="round,pad=0.35", fc="white", ec="none", alpha=0.7)
+# Frame the basin (a lone 1989 anomaly aside) so the tracks fill the panel.
+ax.set_xlim(42, 100)
+ax.set_ylim(2, 30)
+ax.set_aspect("equal")
+
+# Region labels sit over their own sub-basin, each on a soft translucent plate
+# so it stays legible on top of the tracks; the legend goes top-right, clear of
+# both the labels and the dense track cluster.
+plate = dict(boxstyle="round,pad=0.35", fc="white", ec="none", alpha=0.72)
 ax.text(
-    0.70,
-    0.12,
-    "Bay of Bengal",
+    0.20,
+    0.14,
+    "Arabian Sea",
     transform=ax.transAxes,
-    color=BOB,
+    color=ARB,
     fontsize=12,
     fontweight="bold",
     ha="center",
     bbox=plate,
 )
 ax.text(
-    0.30,
-    0.12,
-    "Arabian Sea",
+    0.78,
+    0.14,
+    "Bay of Bengal",
     transform=ax.transAxes,
-    color=ARB,
+    color=BOB,
     fontsize=12,
     fontweight="bold",
     ha="center",
@@ -164,8 +170,7 @@ handles = [
     for b in ("BOB", "ARB")
     if b in set(storm_basin)
 ]
-ax.legend(handles=handles, loc="upper left", title="Sub-basin", title_fontsize=10)
-ax.set_aspect("equal")
+ax.legend(handles=handles, loc="upper right", title="Sub-basin", title_fontsize=10)
 ax.set_xlabel("Longitude (°E)")
 ax.set_ylabel("Latitude (°N)")
 ax.set_title(f"All IMD best tracks, {yr_min}–{yr_max}  (n = {n_storms})")
@@ -184,7 +189,7 @@ genesis = obs[obs["step"] == 0].merge(
     storms[["storm_id", "peak_grade", "max_wind"]], on="storm_id", how="left"
 )
 
-fig, ax = plt.subplots(figsize=(8.5, 6.5), layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 5.2), layout="constrained")
 sc = ax.scatter(
     genesis["lon"],
     genesis["lat"],
@@ -195,10 +200,12 @@ sc = ax.scatter(
     edgecolor="white",
     linewidth=0.4,
 )
-cb = fig.colorbar(sc, ax=ax, shrink=0.85, pad=0.02)
+cb = fig.colorbar(sc, ax=ax, shrink=0.9, pad=0.02)
 cb.set_label("Lifetime peak wind (kt)", color=INK2)
 cb.outline.set_visible(False)
 cb.ax.tick_params(color=MUTED, labelcolor=INK2)
+ax.set_xlim(42, 102)
+ax.set_ylim(2, 30)
 ax.set_aspect("equal")
 ax.set_xlabel("Longitude (°E)")
 ax.set_ylabel("Latitude (°N)")
@@ -292,24 +299,28 @@ for col in ("BOB", "ARB"):
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 x = np.arange(12)
-fig, ax = plt.subplots(figsize=(9.5, 4.8), layout="constrained")
+fig, ax = plt.subplots(figsize=(9.5, 5.0), layout="constrained")
 ax.bar(x - 0.21, season["BOB"], width=0.4, color=BOB, label="Bay of Bengal")
 ax.bar(x + 0.21, season["ARB"], width=0.4, color=ARB, label="Arabian Sea")
+ax.margins(y=0.20)  # headroom so the season labels sit clear of the tallest bars
 
-# Shade the two active seasons and label them *above* the axes, clear of the bars.
+# Shade the two active seasons; label each *inside* the panel near the top (below
+# the title, above the bars) so nothing collides.
 xtr = ax.get_xaxis_transform()
+plate = dict(boxstyle="round,pad=0.3", fc="white", ec="none", alpha=0.75)
 for lo, hi, name in [(2.5, 5.5, "Pre-monsoon"), (8.5, 11.5, "Post-monsoon")]:
-    ax.axvspan(lo, hi, color=MUTED, alpha=0.06, zorder=0)
+    ax.axvspan(lo, hi, color=MUTED, alpha=0.07, zorder=0)
     ax.text(
         (lo + hi) / 2,
-        1.02,
+        0.96,
         name,
         transform=xtr,
         ha="center",
-        va="bottom",
+        va="top",
         fontsize=9.5,
         color=INK2,
         fontweight="bold",
+        bbox=plate,
     )
 
 ax.set_xticks(x)
@@ -318,8 +329,7 @@ ax.set_xlabel("Genesis month")
 ax.set_ylabel("Number of systems")
 ax.set_title("Seasonal cycle of cyclogenesis")
 ax.grid(axis="x", visible=False)
-ax.legend(loc="upper center", ncol=2)
-ax.margins(y=0.18)  # headroom for the season labels
+ax.legend(loc="upper left", ncol=1)
 plt.show()
 
 # %% [markdown]
