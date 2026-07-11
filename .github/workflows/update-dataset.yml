@@ -40,8 +40,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: Install package (with pipeline extra)
-        run: python -m pip install -e ".[all]"
+        run: uv pip install --system -e ".[all]"
 
       # If this step exits non-zero (parse/validation failure) the job fails and
       # no commit happens — the previous dataset stays in place.
