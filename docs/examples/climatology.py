@@ -22,7 +22,9 @@
 # **Bay of Bengal (BoB)** and the **Arabian Sea (ARB)**.
 #
 # Everything runs against the dataset committed in the repo, so the numbers and
-# figures below are real and regenerate on every docs build.
+# figures below are real and regenerate on every docs build. We load it through
+# `.clean(fix_dates=True)` to drop the few QC-flagged coordinate spikes and
+# correct day/month-transposed dates before analysing.
 
 # %%
 import matplotlib.pyplot as plt
@@ -80,7 +82,10 @@ def storm_label(row):
     return name if isinstance(name, str) and name else row["storm_id"]
 
 
-bt = imd.load()
+# Load and clean: drop the handful of coordinate spikes (`pos_suspect`) and fix
+# day/month-transposed dates (`date_suspect`) so the map has no impossible jumps
+# and genesis months are correct (e.g. Nargis returns to May instead of January).
+bt = imd.load().clean(fix_dates=True)
 obs = bt.observations.copy()
 storms = bt.storms.copy()
 bt
