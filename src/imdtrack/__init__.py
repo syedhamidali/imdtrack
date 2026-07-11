@@ -20,6 +20,7 @@ from .core import BestTracks, load, update
 from .fetch import DEFAULT_URL, fetch_data_from_repo, fetch_workbook
 from .parse import parse_workbook
 from .pipeline import build
+from .plot import plot_track, plot_tracks
 from .qc import flag_positions
 
 __all__ = [
@@ -31,6 +32,8 @@ __all__ = [
     "fetch_workbook",
     "fetch_data_from_repo",
     "flag_positions",
+    "plot_track",
+    "plot_tracks",
     "DEFAULT_URL",
     "GRADE_ORDER",
     "GRADE_LONG",

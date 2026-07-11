@@ -44,22 +44,12 @@ bt.storms.tail()
 # %% [markdown]
 # ## Plot a cyclone track
 #
-# Pick the most recent storm and plot its path.
+# `imdtrack` ships an optional cartopy map plotter (`pip install imdtrack[plot]`) —
+# tropycal-style, but coloured by IMD grade or wind. Here's the most recent storm:
 
 # %%
-import matplotlib.pyplot as plt
-
 latest_id = bt.storms["storm_id"].iloc[-1]
-track = bt.storm(latest_id)
-
-fig, ax = plt.subplots(figsize=(6, 5))
-sc = ax.scatter(track["lon"], track["lat"], c=track["wind"], cmap="viridis")
-ax.plot(track["lon"], track["lat"], color="grey", lw=0.6, zorder=0)
-ax.set_xlabel("Longitude (°E)")
-ax.set_ylabel("Latitude (°N)")
-ax.set_title(f"Track of {latest_id}")
-fig.colorbar(sc, ax=ax, label="Max sustained wind (kt)")
-plt.show()
+imd.plot_track(bt.storm(latest_id), color="wind", title=f"Track of {latest_id}")
 
 # %% [markdown]
 # ## The xarray Dataset
