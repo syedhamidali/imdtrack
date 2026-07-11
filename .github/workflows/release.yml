@@ -45,6 +45,9 @@ jobs:
           uvx twine check dist/*
 
       - name: Publish to TestPyPI
+        # TestPyPI is a smoke test, not the release — don't let its flakiness
+        # (it times out sometimes) block the real PyPI publish below.
+        continue-on-error: true
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
