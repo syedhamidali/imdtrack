@@ -94,10 +94,11 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
 
         # The Date column is a *merged* cell in the workbook: it holds the date
         # only on the first (usually 00:00) row of each day and is None on the
-        # 3-hourly rows below it. Forward-fill it — like serial/name/basin — so
-        # those fixes aren't dropped for lack of a date.
-        date_cell = get(row, "date")
-        if isinstance(date_cell, datetime):
+        # 3-hourly rows below it. It is also stored inconsistently (real datetime
+        # in most sheets, day-first text like "16-06-2008" in others). Parse both
+        # forms and forward-fill — like serial/name/basin — so no fix is dropped.
+        date_cell = S.parse_date(get(row, "date"))
+        if date_cell is not None:
             cur_date = date_cell
 
         minutes = S.parse_time(get(row, "time"))
@@ -144,6 +145,58 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
                 )
 
     return observations, remarks
+
+
+def count_positional_rows(path: PathLike) -> dict[int, int]:
+    """Count, per year, rows that carry a real fix — a numeric lat, numeric lon,
+    and a valid HHMM time — under a storm.
+
+    This is deliberately **independent of the date handling** (which is where the
+    fiddly parsing lives): it answers "how many track fixes does the workbook
+    contain?" so the pipeline can verify the parser captured all of them and
+    never silently drops rows again.
+    """
+    import openpyxl
+
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    try:
+        counts: dict[int, int] = {}
+        for year, ws in _iter_year_sheets(wb):
+            rows = ws.iter_rows(values_only=True)
+            colmap = None
+            for row in rows:
+                if S.is_header_row(row):
+                    colmap = S.detect_columns(row)
+                    break
+            if colmap is None:
+                continue
+
+            def get(row, field, colmap=colmap):
+                idx = colmap.get(field)
+                if idx is None or idx >= len(row):
+                    return None
+                return row[idx]
+
+            cur_serial = None
+            n = 0
+            for row in rows:
+                if not any(c is not None for c in row):
+                    continue
+                serial = get(row, "serial")
+                if serial is not None:
+                    try:
+                        cur_serial = int(float(serial))
+                    except (TypeError, ValueError):
+                        pass
+                lat = S.to_float(get(row, "lat"))
+                lon = S.to_float(get(row, "lon"))
+                minutes = S.parse_time(get(row, "time"))
+                if cur_serial is not None and lat == lat and lon == lon and minutes is not None:
+                    n += 1
+            counts[year] = n
+    finally:
+        wb.close()
+    return counts
 
 
 def _storm_id(year: int, serial: int) -> str:

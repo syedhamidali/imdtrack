@@ -152,6 +152,33 @@ def to_float(value) -> float:
     return float(m.group()) if m else math.nan
 
 
+def parse_date(value) -> Optional[datetime]:
+    """Parse a Date cell to a ``datetime`` (date part only), or None.
+
+    The workbook stores the date inconsistently: usually a real ``datetime``,
+    but sometimes a day-first text string (``"16-06-2008"``, ``"01/10/2025"``).
+    Both must be understood, or every fix in a text-dated storm gets dropped.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return datetime(value.year, value.month, value.day)
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    s = str(value).strip()
+    # Day-first DD-MM-YYYY / DD/MM/YYYY / DD.MM.YYYY (IMD convention).
+    m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})", s)
+    if not m:
+        return None
+    day, month, year = (int(g) for g in m.groups())
+    if year < 100:
+        year += 2000
+    try:
+        return datetime(year, month, day)
+    except ValueError:
+        return None
+
+
 def parse_time(value) -> Optional[int]:
     """Parse a Time (UTC) cell into minutes-since-midnight, or None if not a time.
 

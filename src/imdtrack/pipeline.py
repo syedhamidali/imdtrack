@@ -64,6 +64,8 @@ def build(
     # A new (or forced) workbook: parse and validate before touching data_dir.
     frames = _parse.parse_workbook(res.path)
     validate.validate_frames(frames)
+    # Completeness: every positional row in the workbook must have been parsed.
+    validate.validate_completeness(frames, _parse.count_positional_rows(res.path))
     validate.validate_against_previous(frames, previous)
 
     manifest = store.write_dataset(frames, data_dir, source_url=url, source_sha256=sha)

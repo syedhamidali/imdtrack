@@ -103,6 +103,18 @@ def test_validate_rejects_out_of_range_positions(tmp_path):
         validate.validate_frames(frames)
 
 
+def test_validate_completeness_flags_dropped_rows():
+    frames = {"observations": pd.DataFrame({"year": [2020, 2020, 2021]})}
+    # Workbook had 5 positional rows in 2020 but only 2 were parsed -> must fail.
+    with pytest.raises(validate.ValidationError):
+        validate.validate_completeness(frames, {2020: 5, 2021: 1})
+
+
+def test_validate_completeness_passes_when_complete():
+    frames = {"observations": pd.DataFrame({"year": [2020, 2020, 2021]})}
+    validate.validate_completeness(frames, {2020: 2, 2021: 1})  # no raise
+
+
 def test_validate_against_previous_rejects_shrink(tmp_path):
     wb = _write_workbook(tmp_path, n_storms=3)
     frames = parse_workbook(wb)

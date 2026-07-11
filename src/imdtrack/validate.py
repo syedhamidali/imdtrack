@@ -37,6 +37,35 @@ class ValidationError(Exception):
     """Raised when a newly-parsed dataset fails a sanity check."""
 
 
+def validate_completeness(frames: dict, positional_by_year: dict) -> None:
+    """Assert the parser captured every fix the workbook contains.
+
+    ``positional_by_year`` comes from :func:`imdtrack.parse.count_positional_rows`
+    — an independent count of rows with a position and time. Every such row must
+    appear as a parsed observation; if the parsed count falls short for any year,
+    the parser dropped fixes (as the merged-cell and text-date bugs once did) and
+    we refuse to publish. This runs on every build, so a new workbook quirk that
+    drops rows fails the job loudly instead of silently shipping a partial record.
+    """
+    obs = frames["observations"]
+    parsed_by_year = obs.groupby("year").size().to_dict() if not obs.empty else {}
+
+    shortfalls = []
+    for year, expected in positional_by_year.items():
+        got = int(parsed_by_year.get(year, 0))
+        if got < expected:
+            shortfalls.append((year, expected, got))
+
+    if shortfalls:
+        detail = ", ".join(f"{y}: {g}/{e}" for y, e, g in sorted(shortfalls))
+        missing = sum(e - g for _, e, g in shortfalls)
+        raise ValidationError(
+            f"parser dropped {missing} fix(es) present in the workbook "
+            f"(parsed/expected by year — {detail}); refusing to publish a "
+            "partial dataset"
+        )
+
+
 def validate_frames(frames: dict) -> None:
     """Structural / plausibility checks on a parsed dataset. Raises on failure."""
     for name in ("observations", "remarks", "storms"):

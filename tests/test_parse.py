@@ -62,6 +62,37 @@ def _write(tmp_path, sheets):
     return path
 
 
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("16-06-2008", datetime(2008, 6, 16)),
+        ("01/10/2025", datetime(2025, 10, 1)),
+        ("24.5.2021", datetime(2021, 5, 24)),
+        (datetime(2020, 5, 16, 3, 0), datetime(2020, 5, 16)),
+        ("garbage", None),
+        (None, None),
+    ],
+)
+def test_parse_date(raw, expected):
+    assert S.parse_date(raw) == expected
+
+
+def test_text_string_dates_are_parsed(tmp_path):
+    """Some storms store the date as day-first text ("16-06-2008") rather than a
+    datetime; without parsing it, every fix in the storm is dropped."""
+    rows = [
+        HEADER_14,
+        [3, "BOB", None, "16-06-2008", "0300", 21.5, 90.0, 1.5, "990", "30", "5", "DD", "", ""],
+        [None, "BOB", None, None, "0900", 21.5, 89.5, 1.5, "990", "30", "5", "DD", "", ""],
+        [None, "BOB", None, "17-06-2008", "0300", 23.0, 88.5, 1.5, "992", "25", "3", "D", "", ""],
+    ]
+    res = parse_workbook(_write(tmp_path, {"2008": rows}))
+    obs = res["observations"]
+    assert len(obs) == 3
+    assert obs["time"].iloc[0] == datetime(2008, 6, 16, 3, 0)
+    assert obs["time"].iloc[2] == datetime(2008, 6, 17, 3, 0)
+
+
 def test_merged_date_cell_is_forward_filled(tmp_path):
     """The Date column is a merged cell: it is populated only on the first row of
     each day and ``None`` on the 3-hourly rows below. All those fixes must still
