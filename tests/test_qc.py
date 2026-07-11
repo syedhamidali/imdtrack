@@ -5,7 +5,7 @@ import pandas as pd
 from imdtrack import BestTracks
 from imdtrack import _schema as S
 from imdtrack.parse import _summarize_storms
-from imdtrack.qc import flag_positions
+from imdtrack.qc import flag_dates, flag_positions
 
 
 def _track(coords, sid="2020-001"):
@@ -69,3 +69,63 @@ def test_clean_mask_nulls_position_but_keeps_row():
     assert len(m.observations) == 3
     bad = m.observations[m.observations["pos_suspect"]]
     assert bad["lat"].isna().all() and bad["lon"].isna().all()
+
+
+def _date_swap_track():
+    # A storm running Apr 25-30 → May 1/2/3, but the May dates are stored
+    # day/month-swapped as Jan/Feb/Mar 5 (the Nargis pattern). Good fixes are the
+    # majority, as in real storms, so the median date is a stable reference.
+    good = [f"2008-04-{d:02d} 00:00" for d in (25, 26, 27, 28, 29, 30)]
+    swapped = ["2008-01-05 00:00", "2008-02-05 00:00", "2008-03-05 00:00"]  # really May 1/2/3
+    return pd.DataFrame(
+        {
+            "storm_id": "2008-001",
+            "time": pd.to_datetime(good + swapped),
+            "lat": 14.0,
+            "lon": 88.0,
+        }
+    )
+
+
+def test_flag_dates_detects_day_month_swap():
+    obs = _date_swap_track()
+    suspect, corrected = flag_dates(obs)
+    assert suspect.tolist() == [False] * 6 + [True, True, True]
+    # the three swapped rows correct to May 1/2/3
+    assert corrected[suspect].dt.month.tolist() == [5, 5, 5]
+    assert corrected[suspect].dt.day.tolist() == [1, 2, 3]
+
+
+def test_flag_dates_leaves_normal_track_alone():
+    obs = pd.DataFrame(
+        {
+            "storm_id": "2020-001",
+            "time": pd.to_datetime([f"2020-05-{d} 00:00" for d in (10, 11, 12, 13)]),
+            "lat": 12.0,
+            "lon": 88.0,
+        }
+    )
+    suspect, _ = flag_dates(obs)
+    assert not suspect.any()
+
+
+def test_clean_fix_dates_reorders_chronologically():
+    obs = _date_swap_track()
+    obs["date_suspect"], _ = flag_dates(obs)
+    obs["pos_suspect"] = False
+    obs["step"] = range(len(obs))
+    obs["year"] = 2008
+    obs["serial"] = 1
+    obs["name"] = "NARGIS"
+    obs["basin"] = "BOB"
+    obs["wind"] = 65.0
+    obs["pressure"] = 980.0
+    obs["grade"] = pd.Categorical(["VSCS"] * len(obs), categories=S.GRADE_ORDER, ordered=True)
+    bt = BestTracks(obs, pd.DataFrame(), _summarize_storms(obs))
+
+    fixed = bt.clean(fix_dates=True).observations
+    # after correction the track runs Apr 25 → May 3, in order
+    assert fixed["time"].is_monotonic_increasing
+    assert fixed["time"].iloc[-1] == pd.Timestamp("2008-05-03")
+    span_days = (fixed["time"].max() - fixed["time"].min()).days
+    assert span_days == 8  # Apr 25 → May 3, not ~120

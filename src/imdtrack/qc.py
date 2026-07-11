@@ -56,3 +56,51 @@ def flag_positions(observations: pd.DataFrame, max_kmh: float = MAX_TRANSLATION_
         suspect.loc[g.index[1:-1]] = spike
 
     return suspect
+
+
+# Cyclones live for days, not weeks; a fix whose date sits this far from the rest
+# of its storm is almost certainly a data-entry error rather than real duration.
+MAX_STORM_SPREAD_DAYS = 15
+
+
+def flag_dates(observations: pd.DataFrame, min_gap_days: int = MAX_STORM_SPREAD_DAYS):
+    """Detect day/month-transposition errors in the Date column.
+
+    Some rows store a date with day and month swapped — e.g. Nargis (2008-001)
+    has May 1-3 written as "01-05", "02-05", "03-05" (Jan/Feb/Mar 5), which
+    scatters the storm across four months. A fix is flagged when it sits far from
+    its storm's median date *and* swapping its day and month brings it back in
+    line.
+
+    Returns ``(date_suspect, corrected_time)``: a boolean Series and a copy of
+    ``time`` with the swap applied for flagged fixes (source untouched — callers
+    opt in via :meth:`imdtrack.BestTracks.clean`).
+    """
+    suspect = pd.Series(False, index=observations.index)
+    corrected = (
+        observations["time"].copy()
+        if "time" in observations.columns
+        else pd.Series(index=observations.index, dtype="datetime64[ns]")
+    )
+    if observations.empty or not {"storm_id", "time"} <= set(observations.columns):
+        return suspect, corrected
+
+    day = pd.Timedelta(days=1)
+    for _, g in observations.groupby("storm_id", sort=False):
+        if len(g) < 3:
+            continue
+        med = g["time"].median()
+        for idx, t in g["time"].items():
+            if pd.isna(t) or t.day > 12 or t.month > 12 or t.day == t.month:
+                continue  # not swappable / no change
+            try:
+                swapped = t.replace(month=t.day, day=t.month)
+            except ValueError:
+                continue
+            orig_gap = abs((t - med) / day)
+            swap_gap = abs((swapped - med) / day)
+            if orig_gap > min_gap_days and swap_gap <= min_gap_days:
+                suspect.loc[idx] = True
+                corrected.loc[idx] = swapped
+
+    return suspect, corrected
