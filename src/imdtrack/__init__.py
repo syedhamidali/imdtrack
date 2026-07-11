@@ -39,7 +39,7 @@ __all__ = [
 
 try:  # version is written by hatch-vcs at build time, from the git tag
     from ._version import __version__
-except ImportError:  # source checkout without a build (e.g. running from a tarball)
+except ImportError:  # pragma: no cover  (source checkout without a build)
     from importlib.metadata import PackageNotFoundError
     from importlib.metadata import version as _pkg_version
 
