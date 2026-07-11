@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -56,8 +56,12 @@ imdtrack = "imdtrack.cli:main"
 [project.urls]
 Homepage = "https://rsmcnewdelhi.imd.gov.in/"
 
+# Version is derived from git tags (v0.2.5 -> 0.2.5) by hatch-vcs.
 [tool.hatch.version]
-path = "src/imdtrack/__init__.py"
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/imdtrack/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/imdtrack"]
