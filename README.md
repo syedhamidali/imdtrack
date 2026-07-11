@@ -21,10 +21,28 @@ this repo (under [`data/`](data/)) and refreshed by a monthly GitHub Action, so
 ## Install
 
 ```bash
-pip install imdtrack            # pandas + pyarrow (reads the published parquet)
+pip install imdtrack            # core: pandas + pyarrow (reads the published parquet)
 pip install imdtrack[xarray]    # + xarray/numpy for .to_xarray()
-pip install imdtrack[all]       # everything
+pip install imdtrack[plot]      # + cartopy/matplotlib for map plotting
+pip install imdtrack[all]       # xarray + numpy + openpyxl
 ```
+
+Or with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add imdtrack                 # into a project  (or: uv pip install imdtrack)
+```
+
+| Extra | Adds | For |
+|---|---|---|
+| *(none)* | pandas, pyarrow | loading the data as DataFrames |
+| `xarray` | xarray, numpy | `bt.to_xarray()` |
+| `plot` | cartopy, matplotlib | `imd.plot_track()` map plots |
+| `pipeline` | openpyxl | parsing the IMD workbook yourself (`source="imd"`) |
+
+> `cartopy` has no Python 3.14 wheel yet, so `[plot]` needs Python ≤ 3.13 (or a
+> conda/system GEOS+PROJ to build it). Conda packaging is on the way — see
+> [`conda/`](conda/).
 
 ## Usage
 
