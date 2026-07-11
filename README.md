@@ -84,15 +84,23 @@ have to do anything; `imd.load(update=True)` pulls the latest.
 ## Data quality
 
 The library mirrors the IMD workbook faithfully, including its occasional
-data-entry errors. A conservative, **non-destructive** check flags fixes whose
-coordinates imply an impossible jump (an isolated position spike) via a
-`pos_suspect` column — the source values are never altered:
+data-entry errors. Two conservative, **non-destructive** checks flag them — the
+source values are never altered:
+
+- **`pos_suspect`** — a fix whose coordinates imply an impossible jump (isolated
+  position spike), e.g. a corrupted latitude.
+- **`date_suspect`** — a day/month-transposed date, e.g. Nargis (2008) where
+  May 1–3 were stored as "01/05, 02/05, 03/05" (Jan/Feb/Mar 5).
 
 ```python
 bt = imd.load()
-bt.observations.query("pos_suspect")   # inspect the flagged fixes
-bt.clean()                             # drop them  (or clean(how="mask") to null lat/lon)
+bt.observations.query("pos_suspect or date_suspect")   # inspect flagged fixes
+bt.clean()                        # drop position spikes (or clean(how="mask"))
+bt.clean(fix_dates=True)          # also swap day/month back and re-order the track
 ```
+
+These catch the common, well-defined cases; a few storms have messier date
+corruption that is left as-is (visible as an implausibly long `start_time`–`end_time` span).
 
 ## Notes & caveats
 
