@@ -62,6 +62,33 @@ def _write(tmp_path, sheets):
     return path
 
 
+def test_merged_date_cell_is_forward_filled(tmp_path):
+    """The Date column is a merged cell: it is populated only on the first row of
+    each day and ``None`` on the 3-hourly rows below. All those fixes must still
+    be captured (regression for dropping ~7/8 of every storm's track)."""
+    day1 = datetime(2021, 5, 14)
+    day2 = datetime(2021, 5, 15)
+    rows = [
+        HEADER_14,
+        # Serial + date only on the first row of the storm/day (merged-cell effect)
+        [2, "AS", "TAUKTAE", day1, "0300", 10.5, 72.3, 1.5, "997", "25", "3", "D", "", ""],
+        [None, "AS", "TAUKTAE", None, "0600", 11.0, 72.5, 1.5, "996", "25", "4", "D", "", ""],
+        [None, "AS", "TAUKTAE", None, "0900", 11.5, 72.5, 2.0, "995", "30", "5", "D", "", ""],
+        [None, "AS", "TAUKTAE", None, "1200", 11.6, 72.6, 2.0, "995", "30", "6", "DD", "", ""],
+        # Next day: date reappears on its first row, then None again
+        [None, "AS", "TAUKTAE", day2, "0000", 12.7, 72.5, 2.5, "992", "40", "8", "CS", "", ""],
+        [None, "AS", "TAUKTAE", None, "0300", 12.8, 72.5, 2.5, "992", "40", "8", "CS", "", ""],
+    ]
+    res = parse_workbook(_write(tmp_path, {"2021": rows}))
+    obs = res["observations"]
+    assert len(obs) == 6  # not 2 — the merged-date continuation rows are kept
+    assert obs["storm_id"].nunique() == 1
+    assert list(obs["step"]) == [0, 1, 2, 3, 4, 5]
+    # times are reconstructed from the forward-filled date + each row's HHMM
+    assert obs["time"].iloc[1] == datetime(2021, 5, 14, 6, 0)
+    assert obs["time"].iloc[5] == datetime(2021, 5, 15, 3, 0)
+
+
 def test_serial_ffill_and_grouping(tmp_path):
     d = datetime(2020, 5, 16)
     rows = [

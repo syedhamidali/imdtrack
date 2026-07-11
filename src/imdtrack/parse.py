@@ -65,6 +65,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
     cur_serial = None
     cur_basin = None
     cur_name = None
+    cur_date = None
 
     for row in rows:
         if not any(c is not None for c in row):
@@ -76,9 +77,10 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
                 new_serial = int(float(serial))
                 if new_serial != cur_serial:
                     # New storm begins: don't let the previous storm's name /
-                    # basin forward-fill into it.
+                    # basin / date forward-fill into it.
                     cur_name = None
                     cur_basin = None
+                    cur_date = None
                 cur_serial = new_serial
             except (TypeError, ValueError):
                 pass  # keep previous serial for spill-over rows
@@ -90,14 +92,21 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
         if name is not None:
             cur_name = name
 
-        date = get(row, "date")
+        # The Date column is a *merged* cell in the workbook: it holds the date
+        # only on the first (usually 00:00) row of each day and is None on the
+        # 3-hourly rows below it. Forward-fill it — like serial/name/basin — so
+        # those fixes aren't dropped for lack of a date.
+        date_cell = get(row, "date")
+        if isinstance(date_cell, datetime):
+            cur_date = date_cell
+
         minutes = S.parse_time(get(row, "time"))
         lat = S.to_float(get(row, "lat"))
         lon = S.to_float(get(row, "lon"))
 
         is_track = (
             cur_serial is not None
-            and isinstance(date, datetime)
+            and isinstance(cur_date, datetime)
             and minutes is not None
             and lat == lat  # not NaN
             and lon == lon
@@ -110,7 +119,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
                     "serial": cur_serial,
                     "basin": cur_basin,
                     "name": cur_name,
-                    "time": date + timedelta(minutes=minutes),
+                    "time": cur_date + timedelta(minutes=minutes),
                     "lat": lat,
                     "lon": lon,
                     "ci_no": S.to_float(get(row, "ci_no")),
@@ -129,7 +138,7 @@ def parse_sheet(year: int, ws) -> tuple[list[dict], list[dict]]:
                     {
                         "year": year,
                         "serial": cur_serial,
-                        "date": date if isinstance(date, datetime) else pd.NaT,
+                        "date": cur_date if isinstance(cur_date, datetime) else pd.NaT,
                         "remark": text,
                     }
                 )
