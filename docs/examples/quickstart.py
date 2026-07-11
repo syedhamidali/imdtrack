@@ -75,3 +75,24 @@ ds
 
 # %%
 ds.sel(storm=latest_id)["wind"].max().item()
+
+# %% [markdown]
+# ## Data quality
+#
+# The dataset mirrors the IMD workbook faithfully, including its occasional
+# data-entry errors, which are flagged **non-destructively**: `pos_suspect` marks
+# fixes whose coordinates imply an impossible jump, and `date_suspect` marks
+# day/month-transposed dates. Inspect them, or clean them on demand:
+
+# %%
+flagged = bt.observations.query("pos_suspect or date_suspect")
+print(
+    f"{len(flagged)} flagged fixes "
+    f"({int(bt.observations['pos_suspect'].sum())} position, "
+    f"{int(bt.observations['date_suspect'].sum())} date)"
+)
+
+# %%
+# Drop the coordinate spikes and swap day/month-transposed dates back into order.
+clean = imd.load().clean(fix_dates=True)
+clean
