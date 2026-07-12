@@ -44,12 +44,18 @@ bt.storms.tail()
 # %% [markdown]
 # ## Plot a cyclone track
 #
-# `imdtrack` ships an optional cartopy map plotter (`pip install imdtrack[plot]`) —
-# tropycal-style, but coloured by IMD grade or wind. Here's the most recent storm:
+# The optional `[plot]` extra (`pip install imdtrack[plot]`) draws
+# publication-quality Cartopy maps — the track is coloured by **IMD category**,
+# with genesis/peak/end marked. Look storms up by id **or name**:
 
 # %%
-latest_id = bt.storms["storm_id"].iloc[-1]
-imd.plot_track(bt.storm(latest_id), color="wind", title=f"Track of {latest_id}")
+imd.plot_track(bt.storm("tauktae"), color="grade", annotate=True)
+
+# %% [markdown]
+# …or colour by wind speed instead (the title is generated from the storm):
+
+# %%
+imd.plot_track(bt.storm("2020-001"), color="wind")
 
 # %% [markdown]
 # ## The xarray Dataset
@@ -64,7 +70,7 @@ ds
 # Slice one storm and get its peak intensity:
 
 # %%
-ds.sel(storm=latest_id)["wind"].max().item()
+ds.sel(storm="2020-001")["wind"].max().item()
 
 # %% [markdown]
 # ## Data quality

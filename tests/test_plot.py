@@ -38,7 +38,16 @@ def test_plot_track_by_grade_returns_geoaxes():
 
 def test_plot_track_by_wind():
     ax = plot_track(_track(), color="wind", title="test")
-    assert ax.get_title() == "test"
+    # a single-map figure puts the title on the figure suptitle
+    assert ax.figure._suptitle.get_text() == "test"
+    plt.close("all")
+
+
+def test_plot_track_auto_title_from_data():
+    # title=None -> two-line auto title with the peak wind
+    ax = plot_track(_track(), color="grade")
+    text = ax.figure._suptitle.get_text()
+    assert "Peak" in text and "kt" in text
     plt.close("all")
 
 

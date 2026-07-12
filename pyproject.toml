@@ -40,6 +40,7 @@ docs = [
     "myst-nb>=1.0",
     "jupytext>=1.16",
     "ipykernel>=6",
+    "sphinx-copybutton>=0.5",
     "matplotlib>=3.6",
     "cartopy>=0.21",
     # The example notebooks use .to_xarray(); keep docs self-sufficient so the

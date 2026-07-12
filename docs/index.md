@@ -7,36 +7,19 @@ The parsed dataset lives in the project's GitHub repo (rebuilt from the IMD
 workbook by a monthly, validated pipeline). `imd.load()` downloads that
 pre-parsed data — no Excel scraping on your machine.
 
-```{toctree}
-:maxdepth: 2
-:caption: Contents
-
-examples/quickstart
-examples/climatology
-api
-```
-
-## Install
-
-```bash
-pip install imdtrack            # pandas + pyarrow
-pip install imdtrack[xarray]    # + xarray/numpy for .to_xarray()
-pip install imdtrack[all]       # everything
-```
-
-## At a glance
-
 ```python
 import imdtrack as imd
 
-bt = imd.load()          # pre-parsed dataset from GitHub (cached)
-bt.observations          # one tidy row per 3-hourly fix
-bt.storms                # one summary row per storm
-bt.to_xarray()           # (storm, step) xarray.Dataset
+bt = imd.load()                       # pre-parsed dataset from GitHub (cached)
+bt.observations                       # one tidy row per 3-hourly fix
+bt.storms                             # one summary row per storm
+bt.to_xarray()                        # (storm, step) xarray.Dataset
+imd.plot_track(bt.storm("tauktae"))   # cartopy map  (needs the [plot] extra)
 ```
 
-See the {doc}`examples/quickstart` for a full walkthrough and the {doc}`api`
-reference for every function.
+New here? Head to {doc}`installation`, then the {doc}`examples/quickstart`. The
+{doc}`userguide` covers loading, the data model, updates, and data quality, and
+the {doc}`api` documents every function.
 
 ## Citation
 
@@ -50,3 +33,12 @@ it stays stable across releases:
 The repository's [`CITATION.cff`](https://github.com/syedhamidali/imdtrack/blob/main/CITATION.cff)
 carries the machine-readable metadata (GitHub's "Cite this repository" button
 reads it).
+
+```{toctree}
+:hidden:
+
+installation
+userguide
+api
+contributing
+```
