@@ -9,6 +9,7 @@ path end to end without any HTTP.
 from datetime import datetime
 
 import openpyxl
+import pytest
 
 import imdtrack as imd
 from imdtrack import store
@@ -68,6 +69,21 @@ def test_load_from_local_data_dir(tmp_path, monkeypatch):
     # ordered categorical restored on read
     assert bt.observations["grade"].cat.ordered
     assert bt.storm("2020-001")["wind"].max() == 130.0
+
+
+def test_storm_lookup_by_id_and_name(tmp_path, monkeypatch):
+    data_dir = _write_dataset(tmp_path)  # one storm, 2020-001, named AMPHAN
+    monkeypatch.setenv("IMDTRACK_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("IMDTRACK_CACHE", str(tmp_path / "cache"))
+    bt = imd.load()
+
+    by_id = bt.storm("2020-001")
+    by_name = bt.storm("amphan")  # case-insensitive name lookup
+    assert len(by_id) == len(by_name) == 3
+    assert by_name["storm_id"].iloc[0] == "2020-001"
+
+    with pytest.raises(KeyError):
+        bt.storm("no-such-storm")
 
 
 def test_load_local_to_xarray(tmp_path, monkeypatch):
