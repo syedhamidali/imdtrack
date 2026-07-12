@@ -43,9 +43,17 @@ class BestTracks:
 
         return to_xarray(self.observations, self.storms)
 
-    def storm(self, storm_id: str) -> pd.DataFrame:
-        """Track for a single storm, sorted by time."""
-        return self.observations[self.observations["storm_id"] == storm_id]
+    def storm(self, key: str) -> pd.DataFrame:
+        """Track for a single storm, by ``storm_id`` (``"2021-002"``) or name
+        (case-insensitive, e.g. ``"tauktae"``), sorted by time."""
+        obs = self.observations
+        sel = obs[obs["storm_id"] == key]
+        if len(sel):
+            return sel.sort_values("time")
+        sel = obs[obs["name"].astype("string").str.upper() == str(key).strip().upper()]
+        if len(sel):
+            return sel.sort_values(["storm_id", "time"])
+        raise KeyError(f"no storm with id or name {key!r}")
 
     def clean(self, how: str = "drop", fix_dates: bool = False) -> BestTracks:
         """Return a copy with QC-flagged errors handled (source never altered).

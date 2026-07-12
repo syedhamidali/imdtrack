@@ -34,7 +34,12 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx_copybutton",
 ]
+
+# strip prompts so copied code is runnable
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
 
 templates_path = ["_templates"]
 # ``.py`` is registered as a notebook format below, so exclude this config file
@@ -79,6 +84,8 @@ html_theme_options = {
     ],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "show_prev_next": False,
+    "use_edit_page_button": True,
+    "show_toc_level": 2,
 }
 html_context = {
     "github_user": "syedhamidali",
