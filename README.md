@@ -27,10 +27,11 @@ pip install imdtrack[plot]      # + cartopy/matplotlib for map plotting
 pip install imdtrack[all]       # xarray + numpy + openpyxl
 ```
 
-Or with [uv](https://docs.astral.sh/uv/):
+Or with [conda](https://conda-forge.org/) / [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add imdtrack                 # into a project  (or: uv pip install imdtrack)
+conda install -c conda-forge imdtrack   # core package
+uv add imdtrack                          # into a project  (or: uv pip install imdtrack)
 ```
 
 | Extra | Adds | For |
@@ -40,9 +41,9 @@ uv add imdtrack                 # into a project  (or: uv pip install imdtrack)
 | `plot` | cartopy, matplotlib | `imd.plot_track()` map plots |
 | `pipeline` | openpyxl | parsing the IMD workbook yourself (`source="imd"`) |
 
-> `cartopy` has no Python 3.14 wheel yet, so `[plot]` needs Python ≤ 3.13 (or a
-> conda/system GEOS+PROJ to build it). Conda packaging is on the way — see
-> [`conda/`](conda/).
+> `cartopy` has no Python 3.14 wheel yet, so the `[plot]` extra needs Python ≤ 3.13
+> (or a conda/system GEOS+PROJ to build it). `conda install -c conda-forge imdtrack`
+> pulls in a prebuilt cartopy, sidestepping this.
 
 ## Usage
 
