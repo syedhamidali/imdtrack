@@ -46,7 +46,8 @@ def _cartopy():
     except ImportError as exc:  # pragma: no cover - only hit without cartopy
         raise ImportError(
             "Map plotting needs cartopy and matplotlib. Install them with:\n"
-            "    pip install 'imdtrack[plot]'"
+            "    pip install 'imdtrack[plot]'          # needs Python <= 3.13\n"
+            "    conda install -c conda-forge imdtrack  # bundles a prebuilt cartopy"
         ) from exc
     return ccrs, cfeature, plt
 
