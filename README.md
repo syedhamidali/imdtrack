@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/syedhamidali/imdtrack/branch/main/graph/badge.svg)](https://codecov.io/gh/syedhamidali/imdtrack)
 [![Docs](https://readthedocs.org/projects/imdtrack/badge/?version=latest)](https://imdtrack.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/imdtrack.svg)](https://pypi.org/project/imdtrack/)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/imdtrack.svg)](https://anaconda.org/conda-forge/imdtrack)
 [![Python versions](https://img.shields.io/pypi/pyversions/imdtrack.svg)](https://pypi.org/project/imdtrack/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21301659.svg)](https://doi.org/10.5281/zenodo.21301659)
@@ -20,6 +21,8 @@ this repo (under [`data/`](data/)) and refreshed by a monthly GitHub Action, so
 
 ## Install
 
+**pip** (from [PyPI](https://pypi.org/project/imdtrack/)):
+
 ```bash
 pip install imdtrack            # core: pandas + pyarrow (reads the published parquet)
 pip install imdtrack[xarray]    # + xarray/numpy for .to_xarray()
@@ -27,11 +30,32 @@ pip install imdtrack[plot]      # + cartopy/matplotlib for map plotting
 pip install imdtrack[all]       # xarray + numpy + openpyxl
 ```
 
-Or with [conda](https://conda-forge.org/) / [uv](https://docs.astral.sh/uv/):
+**conda / mamba / micromamba** (from [conda-forge](https://anaconda.org/conda-forge/imdtrack)) — create a
+dedicated environment and install in one step. The commands are interchangeable
+across the whole conda family; `conda` ships with Anaconda/Miniconda, while
+`mamba`/`micromamba` are faster drop-in replacements:
 
 ```bash
-conda install -c conda-forge imdtrack   # core package
-uv add imdtrack                          # into a project  (or: uv pip install imdtrack)
+# create a new environment named "imd" with imdtrack in it, then activate it
+conda create -n imd -c conda-forge imdtrack
+conda activate imd
+
+# — or, using mamba / micromamba (same flags) —
+mamba create -n imd -c conda-forge imdtrack        # mamba activate imd
+micromamba create -n imd -c conda-forge imdtrack   # micromamba activate imd
+
+# add it to an environment you already have active
+conda install -c conda-forge imdtrack              # or: mamba / micromamba install ...
+```
+
+The conda-forge build **bundles a prebuilt cartopy**, so map plotting works out of
+the box — no compiler, no GEOS/PROJ, and no Python-version limit.
+
+**uv** (from [PyPI](https://pypi.org/project/imdtrack/)):
+
+```bash
+uv add imdtrack                 # into a uv project  (uv add "imdtrack[plot]" for an extra)
+uv pip install imdtrack         # into the active environment
 ```
 
 | Extra | Adds | For |
@@ -41,9 +65,9 @@ uv add imdtrack                          # into a project  (or: uv pip install i
 | `plot` | cartopy, matplotlib | `imd.plot_track()` map plots |
 | `pipeline` | openpyxl | parsing the IMD workbook yourself (`source="imd"`) |
 
-> `cartopy` has no Python 3.14 wheel yet, so the `[plot]` extra needs Python ≤ 3.13
-> (or a conda/system GEOS+PROJ to build it). `conda install -c conda-forge imdtrack`
-> pulls in a prebuilt cartopy, sidestepping this.
+> With **pip/uv**, `cartopy` has no Python 3.14 wheel yet, so the `[plot]` extra
+> needs Python ≤ 3.13 (or a system GEOS+PROJ to build it). Installing from
+> **conda-forge** avoids this entirely.
 
 ## Usage
 
